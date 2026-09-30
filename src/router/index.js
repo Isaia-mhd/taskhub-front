@@ -3,40 +3,59 @@ import HomeView from '../views/HomeView.vue'
 import Login from '../views/auth/Login.vue'
 import Register from '../views/auth/Register.vue'
 import useAuthStore from '@/stores/auth'
+import WorkspaceLayout from '@/layouts/WorkspaceLayout.vue'
+import PublicLayout from '@/layouts/PublicLayout.vue'
+
+import Main from '@/views/workspace/Main.vue'
+
 
 const routes = [
   {
     path: '/',
-    name: 'home',
-    component: HomeView,
+    name: 'public',
+    component: PublicLayout,
+    children: [
+      {
+        path: '/',
+        name: 'home',
+        component: HomeView,
+        meta: {
+          requiresAuth: true
+        }
+      },
+      {
+        path: '/login',
+        name: 'login',
+        component: Login,
+        meta: {
+          guest: true
+        }
+      },
+      {
+        path: '/register',
+        name: 'register',
+        component: Register,
+        meta: {
+          guest: true
+        }
+      },
+    ]
+  },
+  {
+    path: '/workspace',
+    name: 'workspace',
+    component: WorkspaceLayout,
     meta: {
       requiresAuth: true
-    }
-  },
-  {
-    path: '/login',
-    name: 'login',
-    component: Login,
-    meta: {
-      guest: true
-    }
-  },
-  {
-    path: '/register',
-    name: 'register',
-    component: Register,
-    meta: {
-      guest: true
-    }
-  },
-  // {
-  //   path: '/about',
-  //   name: 'about',
-  //   // route level code-splitting
-  //   // this generates a separate chunk (about.[hash].js) for this route
-  //   // which is lazy-loaded when the route is visited.
-  //   component: () => import(/* webpackChunkName: "about" */ '../views/AboutView.vue')
-  // }
+    },
+    children: [
+      {
+        path: '',
+        name: 'workspace.main',
+        component: Main,
+      }
+    ]
+  }
 ]
 
 const router = createRouter({

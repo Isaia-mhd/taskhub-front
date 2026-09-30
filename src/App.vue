@@ -1,7 +1,7 @@
 
 <template>
-  <div class="bg-slate-800">
-    <PublicLayout v-if="authChecked"/>
+  <div class="bg-gray-800">
+    <router-view v-if="authChecked"/>
     <div class="w-full h-screen flex items-center justify-center text-2xl text-white" v-else>Loading...</div>
   </div>
 </template>

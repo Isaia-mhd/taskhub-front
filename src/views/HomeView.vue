@@ -63,7 +63,4 @@ import useAuthStore from '@/stores/auth'
 import { storeToRefs } from 'pinia'
 const auth = useAuthStore()
 const { user } = storeToRefs(auth)
-
-console.log(user.value);
-
 </script>

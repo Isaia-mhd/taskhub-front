@@ -39,7 +39,7 @@ const menus = [
             Sign In
           </router-link>
           <router-link v-if="!!user"
-            :to="{name: 'login'}"
+            :to="{name: 'workspace.main'}"
             class="bg-slate-800 border-2 border-amber-400 text-amber-400 text-sm font-medium rounded-full px-8 py-2.5 hover:bg-amber-400 hover:text-white transition-all inline-block"
           >
             Workspaces
