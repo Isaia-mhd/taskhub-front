@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full max-w-md mx-auto text-white space-y-6 my-6">
+  <div :class="[theme.text, 'w-full max-w-md mx-auto space-y-6 my-6']">
 
     <div class="text-center md:text-left space-y-2">
       <h2 class="text-2xl font-bold">
@@ -17,76 +17,76 @@
 
       <!-- Full name -->
       <div class="space-y-1.5">
-        <label class="text-xs font-medium">
+        <label class="font-medium">
           Full name
         </label>
 
         <div class="relative">
-          <User class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <User :class="[theme.text, 'w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2']" />
 
           <input
             type="text"
             v-model="account.name"
-            placeholder="Alexandre Martin"
-            class="w-full border rounded-xl pl-9 pr-4 py-2.5 text-sm placeholder-slate-500 focus:outline-none focus:border-amber-400"
+            placeholder="John Doe"
+            :class="[theme.text, 'w-full border rounded-xl pl-9 pr-4 py-2.5 placeholder-slate-500 focus:outline-none focus:border-amber-400']"
           />
         </div>
       </div>
 
       <!-- Email -->
       <div class="space-y-1.5">
-        <label class="text-xs font-medium">
+        <label class="font-medium">
           E-mail Address
         </label>
 
         <div class="relative">
-          <Mail class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Mail :class="[theme.text, 'w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2']" />
 
           <input
             type="email"
             v-model="account.email"
-            placeholder="alexandre@exemple.com"
-            class="w-full border rounded-xl pl-9 pr-4 py-2.5 text-sm placeholder-slate-500 focus:outline-none focus:border-amber-400"
+            placeholder="johndoe@exemple.com"
+            :class="[theme.text, 'w-full border rounded-xl pl-9 pr-4 py-2.5 placeholder-slate-500 focus:outline-none focus:border-amber-400']"
           />
         </div>
       </div>
 
       <!-- Password -->
       <div class="space-y-1.5">
-        <label class="text-xs font-medium">
+        <label class="font-medium">
           Password
         </label>
 
         <div class="relative">
-          <Lock class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Lock :class="[theme.text, 'w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2']" />
 
-          <Eye v-if="showPass.password" @click="toggleShowPass" class="w-4 h-4 cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <EyeOff v-else @click="toggleShowPass" class="w-4 h-4 cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Eye v-if="showPass.password" @click="toggleShowPass" :class="[theme.text, 'w-4 h-4 cursor-pointer absolute right-3 top-1/2 -translate-y-1/2']" />
+          <EyeOff v-else @click="toggleShowPass" :class="[theme.text, 'w-4 h-4 cursor-pointer absolute right-3 top-1/2 -translate-y-1/2']" />
           <input
             :type="showPass.password ? 'text' : 'password'"
             v-model="account.password"
             placeholder="password"
-            class="w-full border rounded-xl pl-9 pr-10 py-2.5 text-sm placeholder-slate-500 focus:outline-none focus:border-amber-400"
+            :class="[ theme.text, 'w-full border rounded-xl pl-9 pr-10 py-2.5 placeholder-slate-500 focus:outline-none focus:border-amber-400']"
           />
         </div>
       </div>
 
       <!-- Confirm password -->
       <div class="space-y-1.5">
-        <label class="text-xs font-medium">
+        <label class="font-medium">
           Confirm password
         </label>
 
         <div class="relative">
-          <ShieldCheck class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <ShieldCheck :class="[theme.text, 'w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2']" />
 
-          <Eye v-if="showPass.password_confirmation" @click="toggleShowPassConfirm" class="w-4 h-4 cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <EyeOff v-else @click="toggleShowPassConfirm" class="w-4 h-4 cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Eye v-if="showPass.password_confirmation" @click="toggleShowPassConfirm" :class="[theme.text, 'w-4 h-4 cursor-pointer absolute right-3 top-1/2 -translate-y-1/2']" />
+          <EyeOff v-else @click="toggleShowPassConfirm" :class="[theme.text, 'w-4 h-4 cursor-pointer absolute right-3 top-1/2 -translate-y-1/2']" />
           <input
             :type="showPass.password_confirmation ? 'text' : 'password'"
             v-model="account.password_confirmation"
-            placeholder="password"
-            class="w-full border rounded-xl pl-9 pr-10 py-2.5 text-sm placeholder-slate-500 focus:outline-none focus:border-amber-400"
+            placeholder="password confirmation"
+            :class="[ theme.text, 'w-full border rounded-xl pl-9 pr-10 py-2.5 placeholder-slate-500 focus:outline-none focus:border-amber-400']"
           />
         </div>
       </div>
@@ -102,7 +102,7 @@
     </form>
 
     <!-- Login -->
-    <p class="text-center text-xs">
+    <p class="text-center">
       Have an account ?
 
       <router-link :to="{name: 'login'}" class="text-amber-400 hover:underline font-medium">
@@ -119,6 +119,9 @@ import useAuthStore from '@/stores/auth'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ErrorMessage from '@/components/ErrorMessage.vue'
+import useThemeStore from '@/stores/theme'
+import { storeToRefs } from 'pinia'
+const { theme } = storeToRefs(useThemeStore())
 const auth = useAuthStore()
 const router = useRouter()
 const error = ref(null)

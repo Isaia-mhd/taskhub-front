@@ -11,18 +11,16 @@
         <h1
           class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6 leading-tight"
         >
-          <span class="text-slate-100 block">
+          <span :class="[theme.text, 'block']">
             Organize Your Work With Us.
           </span>
-          <span
-            class="text-amber-400 bg-linear-to-r from-amber-300 to-amber-500 bg-clip-text"
-          >
+          <span :class="[theme.primary, 'bg-linear-to-r from-amber-300 to-amber-500 bg-clip-text']" >
             Achieve Your Goals.
           </span>
         </h1>
 
         <p
-          class="text-base sm:text-lg text-slate-400 max-w-2xl mb-10 leading-relaxed font-normal"
+          :class="[theme.text, 'text-base sm:text-lg max-w-2xl mb-10 leading-relaxed font-normal']"
         >
           TaskHub helps you centralize your projects, organize your tasks, and
           collaborate efficiently with your team, all in one intuitive
@@ -34,21 +32,21 @@
         >
           <router-link
             to=""
-            class="w-full sm:w-auto bg-amber-400 hover:bg-amber-300 text-slate-950 font-semibold text-sm rounded-full px-8 py-3.5 transition-all shadow-lg shadow-amber-400/20 hover:shadow-amber-400/30 hover:-translate-y-0.5 text-center"
+            :class="[theme.primaryBg, theme.primaryBgHover, theme.primaryText, 'w-full sm:w-auto font-medium text-sm rounded-full px-8 py-3.5 transition-all shadow-lg shadow-amber-400/20 hover:shadow-amber-400/30 hover:-translate-y-0.5 text-center']"
           >
             Get Started for Free
           </router-link>
 
           <router-link v-if="user"
-            to=""
-            class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-400/50 text-slate-200 hover:text-amber-400 text-sm font-medium rounded-full px-8 py-3.5 transition-all text-center"
+            :to="{name: 'workspace'}"
+            :class="[theme.bg, theme.text, 'w-full sm:w-auto border border-slate-700 hover:border-amber-400/50 text-sm font-medium rounded-full px-8 py-3.5 transition-all text-center']"
           >
             Go to Workspace
           </router-link>
 
           <router-link v-if="!user"
-            to=""
-            class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-400/50 text-slate-200 hover:text-amber-400 text-sm font-medium rounded-full px-8 py-3.5 transition-all text-center"
+            :to="{name: 'login'}"
+            :class="[theme.bg, theme.text, 'w-full sm:w-auto border border-slate-700 hover:border-amber-400/50 text-sm font-medium rounded-full px-8 py-3.5 transition-all text-center']"
           >
             Sign In
           </router-link>
@@ -60,7 +58,11 @@
 
 <script setup>
 import useAuthStore from '@/stores/auth'
+import useThemeStore from '@/stores/theme'
+
 import { storeToRefs } from 'pinia'
 const auth = useAuthStore()
 const { user } = storeToRefs(auth)
+const { theme } = storeToRefs(useThemeStore())
+
 </script>

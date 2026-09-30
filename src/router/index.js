@@ -19,9 +19,6 @@ const routes = [
         path: '/',
         name: 'home',
         component: HomeView,
-        meta: {
-          requiresAuth: true
-        }
       },
       {
         path: '/login',
@@ -78,7 +75,7 @@ router.beforeEach(async(to) => {
 
   if(to.meta.guest && auth.isAuthenticated)
   {
-    return { name: 'home' }
+    return { name: 'workspace' }
   }
 
 })
