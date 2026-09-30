@@ -19,8 +19,17 @@ export const getUser = async () => {
 export const authenticate = async (credentials) => {
     try {
         await getToken()
-        const res = await api.post('/api/v1/login', credentials)
-        return res
+        return await api.post('/api/v1/login', credentials)
+        
+    } catch (error) {
+        throw handleError(error)
+    }
+}
+
+export const create = async(info) => {
+    try {
+        await getToken()
+        return await api.post('/api/v1/register', info)
         
     } catch (error) {
         throw handleError(error)

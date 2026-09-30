@@ -1,7 +1,6 @@
 import axios from "axios";
 import { defineStore } from "pinia";
-import { getUser, authenticate, test } from '@/services/authService'
-import { computed } from "vue";
+import { getUser, authenticate, create } from '@/services/authService'
 const useAuthStore = defineStore('auth', {
     state: () => ({
         user: null,
@@ -34,8 +33,9 @@ const useAuthStore = defineStore('auth', {
         {
             
         },
-        async register()
+        async register(info)
         {
+            return await create(info)
 
         },
 

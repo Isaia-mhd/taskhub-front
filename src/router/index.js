@@ -24,7 +24,10 @@ const routes = [
   {
     path: '/register',
     name: 'register',
-    component: Register
+    component: Register,
+    meta: {
+      guest: true
+    }
   },
   // {
   //   path: '/about',

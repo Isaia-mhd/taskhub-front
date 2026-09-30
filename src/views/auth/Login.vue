@@ -8,9 +8,7 @@
       </p>
     </div>
 
-    <div v-if="error" class="bg-slate-800 border border-slate-700 text-red-500 px-3 py-3 rounded-md">
-      <p>{{ error }}</p>
-    </div>
+    <ErrorMessage :error="error" v-if="error"/>
 
     <form @submit.prevent="handleSubmit" class="space-y-4">
       <!-- Email -->
@@ -46,12 +44,15 @@
             class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
           />
 
-          <Eye
+          <Eye v-if="showPass" @click="toggleShowPass"
+            class="w-4 h-4 cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
+          />
+          <EyeOff v-else @click="toggleShowPass"
             class="w-4 h-4 cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
           />
 
           <input
-            type="password"
+            :type="showPass ? 'text' : 'password'"
             v-model="credentials.password"
             placeholder="password"
             class="w-full border rounded-xl pl-9 pr-10 py-2.5 text-sm placeholder-slate-500 focus:outline-none focus:border-amber-400"
@@ -91,7 +92,7 @@
 </template>
 
 <script setup>
-import { Mail, Lock, Eye, ArrowRight } from "@lucide/vue";
+import { Mail, Lock, Eye, EyeOff, ArrowRight } from "@lucide/vue";
 import { ref, toRefs } from 'vue'
 import useAuthStore from '@/stores/auth'
 import { useRouter } from 'vue-router'
@@ -106,6 +107,12 @@ const credentials = ref({
 
 const error = ref(null)
 const loading = ref(false)
+
+const showPass = ref(false)
+
+const toggleShowPass = () => {
+  showPass.value = !showPass.value
+}
 
 const handleSubmit = async () => {
   loading.value = true
