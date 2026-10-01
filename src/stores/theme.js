@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 
 const useThemeStore = defineStore('theme', {
     state: () => ({
-        isLight: localStorage.getItem('isLight') || true,
+        isLight: localStorage.getItem('isLight') === 'true' || false,
         dark: {
             bg: 'bg-slate-900',
 
