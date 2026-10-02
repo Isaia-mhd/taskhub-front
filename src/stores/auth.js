@@ -1,6 +1,6 @@
 import axios from "axios";
 import { defineStore } from "pinia";
-import { getUser, authenticate, create } from '@/services/authService'
+import { getUser, authenticate, create, logout } from '@/services/authService'
 const useAuthStore = defineStore('auth', {
     state: () => ({
         user: null,
@@ -31,7 +31,13 @@ const useAuthStore = defineStore('auth', {
         },
         async logout()
         {
+            try {
+                const res = await logout()
+                if(res) this.user = null
             
+            } catch (error) {
+                throw error
+            }
         },
         async register(info)
         {

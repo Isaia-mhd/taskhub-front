@@ -35,3 +35,12 @@ export const create = async(info) => {
         throw handleError(error)
     }
 }
+export const logout = async() => {
+    try {
+        await getToken()
+        return await api.post('/api/v1/logout')
+        
+    } catch (error) {
+        throw handleError(error)
+    }
+}

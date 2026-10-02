@@ -122,7 +122,7 @@ const handleSubmit = async () => {
   loading.value = true
   try {
     await auth.login(credentials.value)
-    router.push({name: 'home'})
+    router.push({name: 'workspace'})
 
   } catch (err) {
     error.value = err?.message;

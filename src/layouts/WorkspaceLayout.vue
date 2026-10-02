@@ -4,12 +4,23 @@
         <div :class="[theme.bg, theme.border, ' w-[20%] p-4 border rounded-xl m-2']">
             <div class="flex h-full flex-col">
                 <div class="mb-8 flex items-center gap-3 px-2">
-                    <div :class="[theme.primaryBg, 'flex h-9 w-9 items-center justify-center rounded-lg']">
-                        <LayoutDashboard :class="[theme.primaryText, 'h-5 w-5']" />
-                    </div>
-                    <div>
-                        <p :class="[theme.text, 'font-semibold']">TaskHub</p>
-                        <p :class="[theme.textMuted, 'text-xs']">Workspace</p>
+                    <div class="w-full">
+                        <label :class="[theme.textMuted, 'mb-2 block text-xs font-semibold uppercase']" for="workspace-select">
+                            Workspace
+                        </label>
+                        <select
+                            id="workspace-select"
+                            v-model="activeWorkspace"
+                            :disabled="isLoadingWorkspaces || workspaces.length === 0"
+                            :class="[theme.bg, theme.border, theme.text, 'w-full rounded-md border px-3 py-2.5 text-sm outline-none focus:border-amber-400 disabled:cursor-not-allowed disabled:opacity-60']"
+                        >
+                            <option v-if="isLoadingWorkspaces" :value="null">Loading workspaces...</option>
+                            <option v-else-if="workspaceLoadError" :value="null" disabled>Could not load workspaces</option>
+                            <option v-else-if="workspaces.length === 0" :value="null" disabled>No workspace available</option>
+                            <option v-for="workspace in workspaces" :key="workspace.id" :value="workspace.id">
+                                {{ workspace.name }}
+                            </option>
+                        </select>
                     </div>
                 </div>
 
@@ -41,10 +52,10 @@
                     My workspace
                 </div>
 
-                <div class="mt-auto border-t border-inherit pt-4">
-                    <div :class="[theme.text, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm']">
-                        <Settings class="h-4 w-4" />
-                        Settings
+                <div :class="[theme.border, 'mt-auto border-t pt-4']">
+                    <div :class="[theme.text, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-pointer']" @click="logout">
+                        <LogOut class="h-4 w-4" />
+                        Log out
                     </div>
                 </div>
             </div>
@@ -53,39 +64,31 @@
         <div class="w-full flex flex-col gap-3 w-[80%] m-2">
             <!-- header -->
             <div :class="[theme.bg, theme.border, 'border rounded-xl p-4']">
-                <div :class="['flex justify-between items-center']">
-                    <h1 :class="[theme.primary, 'text-xl font-semibold']">TaskHub</h1>
-                    <label :class="[theme.border, 'relative hidden w-full max-w-md items-center md:flex']">
-                        <Search :class="[theme.textMuted, 'pointer-events-none absolute left-3 h-4 w-4']" />
-                        <input
-                            v-model="searchQuery"
-                            type="search"
-                            placeholder="Search tasks, projects, and people"
-                            aria-label="Search tasks, projects, and people"
-                            :class="[theme.bg, theme.text, theme.border, 'w-full rounded-lg border py-2 pl-10 pr-4 text-sm outline-none focus:border-amber-400']"
-                        />
-                    </label>
-                    <div class="flex items-center gap-4">
-                        <Moon v-if="isLight" @click="toggleTheme"/>
-                        <Sun v-else @click="toggleTheme"/>
-                        <button
-                            type="button"
-                            aria-label="Notifications"
-                            :class="[theme.text, theme.primaryHover, 'rounded-lg p-2 transition-colors']"
-                        >
-                            <Bell class="h-5 w-5" />
-                        </button>
-                        <div class="">
-                            <p :class="[theme.text]">{{ user.name }}</p>
-                            <p :class="[theme.text, 'text-sm']">{{ user.email }}</p>
-                        </div>
-                    </div>
-                </div>
+                <WorkspaceHeader />
             </div>
 
             <!-- main -->
-            <div :class="[theme.bg, theme.border, 'border content flex-1 rounded-xl p-4']">
-                <router-view />
+            <div :class="[theme.bg, theme.border, 'border content min-h-0 flex-1 overflow-auto rounded-xl p-4']">
+                <Loading v-if="isLoadingWorkspaces" :full-screen="false" message="Loading workspaces..." />
+                <div v-else-if="workspaceLoadError" :class="['flex h-full min-h-48 flex-col items-center justify-center gap-3 text-center']" role="alert">
+                    <p :class="[theme.text, 'text-base font-medium']">Workspaces could not be loaded.</p>
+                    <p :class="[theme.textMuted, 'text-sm']">{{ workspaceLoadError }}</p>
+                    <button
+                        type="button"
+                        :class="[theme.primaryBg, theme.primaryText, theme.primaryBgHover, 'rounded-md px-4 py-2 text-sm font-medium transition-colors']"
+                        @click="loadWorkspaces"
+                    >
+                        Try again
+                    </button>
+                </div>
+                <router-view v-else-if="activeWorkspace !== null" />
+                <div v-else-if="workspaces.length === 0" :class="['flex h-full min-h-48 flex-col items-center justify-center gap-2 text-center']">
+                    <p :class="[theme.text, 'text-base font-medium']">No workspace available</p>
+                    <p :class="[theme.textMuted, 'text-sm']">Create or join a workspace to get started.</p>
+                </div>
+                <div v-else :class="['flex h-full min-h-48 items-center justify-center']">
+                    <p :class="[theme.textMuted, 'text-sm']">Select a workspace to view its content.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -95,18 +98,45 @@
 import useAuthStore from '@/stores/auth'
 import useThemeStore from '@/stores/theme'
 import { storeToRefs } from 'pinia'
-import { Bell, FolderKanban, Inbox, Sun, Moon, LayoutDashboard, ListTodo, Search, Settings } from '@lucide/vue'
-import { ref } from 'vue'
+import { FolderKanban, Inbox, LogOut,  LayoutDashboard, ListTodo, Settings } from '@lucide/vue'
+import { onMounted, ref } from 'vue'
+import { getWorkspaces } from '@/services/workspaceService'
+import WorkspaceHeader from '@/components/WorkspaceHeader.vue'
+import Loading from '@/components/Loading.vue'
+import { useRouter } from 'vue-router'
+
 
 const auth = useAuthStore()
 const themeStore = useThemeStore()
 const { user } = storeToRefs(auth)
-const { theme, isLight } = storeToRefs(themeStore)
-const searchQuery = ref('')
-const toggleTheme = () => {
-    themeStore.changeTheme()
-    console.log(theme.value);
-    
+const { theme } = storeToRefs(themeStore)
+const router = useRouter()
+const activeWorkspace = ref(null)
+const workspaces = ref([])
+const isLoadingWorkspaces = ref(true)
+const workspaceLoadError = ref('')
+
+const loadWorkspaces = async () => {
+    isLoadingWorkspaces.value = true
+    workspaceLoadError.value = ''
+
+    try {
+        const workspacesFetched = await getWorkspaces()
+        workspaces.value = workspacesFetched
+        activeWorkspace.value = workspaces.value[0]?.id ?? null
+    } catch (error) {
+        workspaceLoadError.value = error.message ?? 'Unable to load workspaces.'
+    } finally {
+        isLoadingWorkspaces.value = false
+    }
+}
+
+onMounted(loadWorkspaces)
+
+
+const logout = async () => {
+    await auth.logout()
+    router.push({ name: 'login' })
 }
 
 </script>
