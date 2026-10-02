@@ -10,7 +10,7 @@
                         </label>
                         <select
                             id="workspace-select"
-                            v-model="activeWorkspace"
+                            v-model="currentWorkspaceId"
                             :disabled="isLoadingWorkspaces || workspaces.length === 0"
                             :class="[theme.bg, theme.border, theme.text, 'w-full rounded-md border px-3 py-2.5 text-sm outline-none focus:border-amber-400 disabled:cursor-not-allowed disabled:opacity-60']"
                         >
@@ -43,13 +43,17 @@
                     </div>
                 </nav>
 
+                <!-- Spaces -->
                 <div class="mt-8 flex items-center justify-between px-2">
                     <p :class="[theme.textMuted, 'text-xs font-semibold uppercase']">Spaces</p>
                     <FolderKanban :class="[theme.textMuted, 'h-4 w-4']" />
                 </div>
-                <div :class="[theme.text, 'mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm']">
-                    <span :class="[theme.primaryBg, 'h-2 w-2 rounded-full']"></span>
-                    My workspace
+
+                <div class="" v-if="currentWorkspace && currentWorkspace.spaces">
+                    <div v-for="space in currentWorkspace.spaces" :key="space.id" :class="[theme.text, 'text-sm font-thin px-2 py-1 my-2 flex items-center gap-2 cursor-pointer']">
+                        <span :class="[ `bg-[${space.color}]`,'w-2 h-2 rounded-full px-1']"></span>
+                        <p>{{ space.name }}</p>
+                    </div>
                 </div>
 
                 <div :class="[theme.border, 'mt-auto border-t pt-4']">
@@ -81,7 +85,7 @@
                         Try again
                     </button>
                 </div>
-                <router-view v-else-if="activeWorkspace !== null" />
+                <router-view v-else-if="currentWorkspaceId !== null" />
                 <div v-else-if="workspaces.length === 0" :class="['flex h-full min-h-48 flex-col items-center justify-center gap-2 text-center']">
                     <p :class="[theme.text, 'text-base font-medium']">No workspace available</p>
                     <p :class="[theme.textMuted, 'text-sm']">Create or join a workspace to get started.</p>
@@ -104,30 +108,40 @@ import { getWorkspaces } from '@/services/workspaceService'
 import WorkspaceHeader from '@/components/WorkspaceHeader.vue'
 import Loading from '@/components/Loading.vue'
 import { useRouter } from 'vue-router'
+import useWorkspaceStore from '@/stores/workspace'
 
 
 const auth = useAuthStore()
 const themeStore = useThemeStore()
+const workspaceStore = useWorkspaceStore()
 const { user } = storeToRefs(auth)
 const { theme } = storeToRefs(themeStore)
+const { workspaces, currentWorkspace, currentWorkspaceId } = storeToRefs(workspaceStore)
 const router = useRouter()
-const activeWorkspace = ref(null)
-const workspaces = ref([])
+
 const isLoadingWorkspaces = ref(true)
+
 const workspaceLoadError = ref('')
 
 const loadWorkspaces = async () => {
+
     isLoadingWorkspaces.value = true
+
     workspaceLoadError.value = ''
 
     try {
         const workspacesFetched = await getWorkspaces()
-        workspaces.value = workspacesFetched
-        activeWorkspace.value = workspaces.value[0]?.id ?? null
+
+        workspaceStore.setWorkspaces(workspacesFetched)
+
     } catch (error) {
+
         workspaceLoadError.value = error.message ?? 'Unable to load workspaces.'
+
     } finally {
+
         isLoadingWorkspaces.value = false
+
     }
 }
 

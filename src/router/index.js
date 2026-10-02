@@ -7,7 +7,7 @@ import WorkspaceLayout from '@/layouts/WorkspaceLayout.vue'
 import PublicLayout from '@/layouts/PublicLayout.vue'
 
 import Main from '@/views/workspace/Main.vue'
-
+import SpaceView from '@/views/workspace/space/SpaceView.vue'
 
 const routes = [
   {
@@ -50,7 +50,12 @@ const routes = [
         path: '',
         name: 'workspace.main',
         component: Main,
-      }
+      },
+      {
+        path: 'spaces',
+        name: 'spaces',
+        component: SpaceView,
+      },
     ]
   }
 ]
