@@ -5,6 +5,7 @@ const useWorkspaceStore = defineStore('workspace', {
     state: () => ({
         workspaces: [],
         currentWorkspace: null,
+        currentError: null
     }),
     actions: {
         async setWorkspaces(workspaces) {
@@ -25,7 +26,7 @@ const useWorkspaceStore = defineStore('workspace', {
 
             } catch (error) {
 
-                throw error
+                this.currentError = error.message;                
                 
             }
             
@@ -33,6 +34,9 @@ const useWorkspaceStore = defineStore('workspace', {
         },
         setCurrentWorkspace(workspace) {
             this.currentWorkspace = workspace;
+        },
+        clearCurrentWorkspace(){
+            this.currentWorkspace = null
         }
     },
     getters: {

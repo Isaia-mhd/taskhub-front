@@ -93,6 +93,7 @@ const props = defineProps({
 
 const logout = async () => {
     await auth.logout()
+    workspaceStore.clearCurrentWorkspace()
     router.push({ name: 'login' })
 }
 </script>
