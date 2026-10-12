@@ -26,3 +26,30 @@ export const getWorkspace = async (workspaceId) => {
 
     }
 }
+
+export const createWorkspace = async (workspaceData) => {
+    try {
+        const response = await apiV1Request('post', 'workspaces', workspaceData);
+        return response.data.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+}
+
+export const updateWorkspace = async (workspaceId, workspaceData) => {
+    try {
+        const response = await apiV1Request('put', `workspaces/${workspaceId}`, workspaceData);
+        return response.data.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+}
+
+export const deleteWorkspace = async (workspaceId) => {
+    try {
+        const response = await apiV1Request('delete', `workspaces/${workspaceId}`);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+}

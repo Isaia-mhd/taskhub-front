@@ -30,6 +30,7 @@
                     </button>
                 </div>
                 <router-view v-else-if="currentWorkspaceId !== null" />
+                                <router-view v-else-if="currentWorkspaceId !== null || $route.name === 'workspace.main'" />
                 <div v-else-if="workspaces.length === 0" :class="['flex h-full min-h-48 flex-col items-center justify-center gap-2 text-center']">
                     <p :class="[theme.text, 'text-base font-medium']">No workspace available</p>
                     <p :class="[theme.textMuted, 'text-sm']">Create or join a workspace to get started.</p>
@@ -84,8 +85,7 @@ const loadWorkspaces = async () => {
 
     try {
         const workspacesFetched = await getWorkspaces()
-
-        workspaceStore.setWorkspaces(workspacesFetched)
+    await workspaceStore.setWorkspaces(workspacesFetched)
 
     } catch (error) {
 

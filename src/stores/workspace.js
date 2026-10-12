@@ -10,33 +10,61 @@ const useWorkspaceStore = defineStore('workspace', {
     actions: {
         async setWorkspaces(workspaces) {
             this.workspaces = workspaces;
+            if (this.workspaces.length === 0) {
+                this.currentWorkspace = null;
+                this.currentError = null;
+                localStorage.removeItem('currentWorkspaceId');
+                return;
+            }
+
+            const savedId = localStorage.getItem('currentWorkspaceId');
+            const desiredWorkspace = this.workspaces.find((workspace) =>
+                String(workspace.id) === String(this.currentWorkspace?.id ?? savedId)
+            ) ?? this.workspaces[0];
 
             try {
-
-                // set the current workspace to the first one in the list if available
-                if(this.workspaces.length > 0){
-                    const workspace = await getWorkspace(this.workspaces[0].id);
-    
-                    this.currentWorkspace = workspace;
-
-                    return
-                }
-
-                return
-
+                await this.selectWorkspace(desiredWorkspace.id);
+                this.currentError = null;
             } catch (error) {
-
-                this.currentError = error.message;                
-                
+                this.currentError = error.message;
+                throw error;
             }
-            
-            // this.currentWorkspace = workspaces.length > 0 ? workspaces[0] : null;
+        },
+        async selectWorkspace(workspaceId) {
+            const workspace = await getWorkspace(workspaceId);
+            this.currentWorkspace = workspace;
+            this.currentError = null;
+            localStorage.setItem('currentWorkspaceId', String(workspace.id));
+        },
+        addWorkspace(workspace) {
+            this.workspaces = [workspace, ...this.workspaces];
+        },
+        updateWorkspace(workspace) {
+            this.workspaces = this.workspaces.map((item) =>
+                String(item.id) === String(workspace.id) ? { ...item, ...workspace } : item
+            );
+            if (String(this.currentWorkspace?.id) === String(workspace.id)) {
+                this.currentWorkspace = { ...this.currentWorkspace, ...workspace };
+            }
+        },
+        async removeWorkspace(workspaceId) {
+            this.workspaces = this.workspaces.filter((workspace) =>
+                String(workspace.id) !== String(workspaceId)
+            );
+            if (String(this.currentWorkspace?.id) !== String(workspaceId)) return;
+
+            if (this.workspaces.length > 0) {
+                await this.selectWorkspace(this.workspaces[0].id);
+            } else {
+                this.currentWorkspace = null;
+                localStorage.removeItem('currentWorkspaceId');
+            }
         },
         setCurrentWorkspace(workspace) {
             this.currentWorkspace = workspace;
         },
-        clearCurrentWorkspace(){
-            this.currentWorkspace = null
+        clearCurrentWorkspace() {
+            this.currentWorkspace = null;
         }
     },
     getters: {
