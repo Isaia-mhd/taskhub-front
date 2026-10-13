@@ -33,15 +33,29 @@
                 <nav class="space-y-1" aria-label="Workspace navigation">
                     <router-link
                         :to="{ name: 'workspace.main' }"
-                        :class="[theme.primaryBg, theme.primaryText, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium']"
+                        :class="[$route.name === 'workspace.main' ? theme.primaryBg : '', $route.name === 'workspace.main' ? theme.primaryText : theme.text, theme.primaryHover, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5']"
                     >
                         <LayoutDashboard class="h-4 w-4" />
                         Overview
                     </router-link>
-                    <div :class="[theme.text, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm']">
+                    <router-link
+                        :to="{ name: 'workspace.members' }"
+                        :class="[$route.name === 'workspace.members' ? theme.primaryBg : '', $route.name === 'workspace.members' ? theme.primaryText : theme.text, theme.primaryHover, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5']"
+                    >
+                        <Users class="h-4 w-4" />
+                        Members
+                    </router-link>
+                    <router-link
+                        :to="{ name: 'workspace.spaces' }"
+                        :class="[$route.name === 'workspace.spaces' ? theme.primaryBg : '', $route.name === 'workspace.spaces' ? theme.primaryText : theme.text, theme.primaryHover, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5']"
+                    >
                         <ListTodo class="h-4 w-4" />
                         My tasks
-                    </div>
+                    </router-link>
+                    <!-- <div :class="[theme.text, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm']">
+                        <ListTodo class="h-4 w-4" />
+                        My tasks
+                    </div> -->
                     <div :class="[theme.text, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm']">
                         <Inbox class="h-4 w-4" />
                         Inbox
@@ -129,7 +143,7 @@ import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 import useWorkspaceStore from '@/stores/workspace'
-import { Building2, Check, ChevronDown, FolderKanban, Inbox, LogOut, LayoutDashboard, ListTodo, X } from '@lucide/vue'
+import { Building2, Check, ChevronDown, FolderKanban, Inbox, LogOut, LayoutDashboard, ListTodo, Users, X } from '@lucide/vue'
 
 
 // Store

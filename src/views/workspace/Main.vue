@@ -1,6 +1,6 @@
 <template>
     <div>
-        <main class="mx-auto max-w-6xl space-y-8">
+        <main class="mx-auto max-w-8xl space-y-8">
             <header class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <p :class="[theme.primary, 'mb-2 text-xs font-semibold uppercase tracking-widest']">Workspace</p>

@@ -8,6 +8,7 @@ import PublicLayout from '@/layouts/PublicLayout.vue'
 
 import Main from '@/views/workspace/Main.vue'
 import SpaceView from '@/views/workspace/space/SpaceView.vue'
+import MembersView from '@/views/workspace/members/MembersView.vue'
 
 const routes = [
   {
@@ -53,8 +54,13 @@ const routes = [
       },
       {
         path: 'spaces',
-        name: 'spaces',
+        name: 'workspace.spaces',
         component: SpaceView,
+      },
+      {
+        path: 'members',
+        name: 'workspace.members',
+        component: MembersView,
       },
     ]
   }
