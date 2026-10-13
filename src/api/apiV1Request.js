@@ -10,10 +10,10 @@ const apiV1Request = async (method, endpoints, options = {}) => {
             break;
         case 'put':
             return await api.put('api/v1/' + endpoints, options)
-            break;
+        case 'patch':
+            return await api.patch('api/v1/' + endpoints, options)
         case 'delete':
             return await api.delete('api/v1/' + endpoints, options)
-            break;
     
         default:
             break;

@@ -63,6 +63,19 @@ const useWorkspaceStore = defineStore('workspace', {
         setCurrentWorkspace(workspace) {
             this.currentWorkspace = workspace;
         },
+        setCurrentWorkspaceSpaces(spaces) {
+            const orderedSpaces = [...spaces].sort((first, second) => Number(first.position) - Number(second.position));
+
+            if (this.currentWorkspace) {
+                this.currentWorkspace = { ...this.currentWorkspace, spaces: orderedSpaces };
+            }
+
+            this.workspaces = this.workspaces.map((workspace) =>
+                String(workspace.id) === String(this.currentWorkspace?.id)
+                    ? { ...workspace, spaces: orderedSpaces }
+                    : workspace
+            );
+        },
         clearCurrentWorkspace() {
             this.currentWorkspace = null;
         }

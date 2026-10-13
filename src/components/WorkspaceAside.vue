@@ -49,8 +49,8 @@
                         :to="{ name: 'workspace.spaces' }"
                         :class="[$route.name === 'workspace.spaces' ? theme.primaryBg : '', $route.name === 'workspace.spaces' ? theme.primaryText : theme.text, theme.primaryHover, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5']"
                     >
-                        <ListTodo class="h-4 w-4" />
-                        My tasks
+                        <FolderKanban class="h-4 w-4" />
+                        Spaces
                     </router-link>
                     <!-- <div :class="[theme.text, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm']">
                         <ListTodo class="h-4 w-4" />
@@ -68,11 +68,16 @@
                     <FolderKanban :class="[theme.textMuted, 'h-4 w-4']" />
                 </div>
 
-                <div class="" v-if="currentWorkspace && currentWorkspace.spaces">
-                    <div v-for="space in currentWorkspace.spaces" :key="space.id" :class="[theme.text, 'text-sm font-thin px-2 py-1 my-2 flex items-center gap-2 cursor-pointer']">
-                        <span :class="[ `bg-[${space.color}]`,'w-2 h-2 rounded-full px-1']"></span>
-                        <p>{{ space.name }}</p>
-                    </div>
+                <div v-if="currentWorkspace?.spaces?.length" class="mt-2 space-y-1">
+                    <router-link
+                        v-for="space in currentWorkspace.spaces"
+                        :key="space.id"
+                        :to="{ name: 'workspace.spaces' }"
+                        :class="[theme.text, theme.primaryHover, 'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-white/5']"
+                    >
+                        <span class="h-2 w-2 shrink-0 rounded-full" :style="{ backgroundColor: space.color || '#F59E0B' }"></span>
+                        <span class="truncate">{{ space.name }}</span>
+                    </router-link>
                 </div>
 
                 <div :class="[theme.border, 'mt-auto border-t pt-4']">
@@ -143,7 +148,7 @@ import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 import useWorkspaceStore from '@/stores/workspace'
-import { Building2, Check, ChevronDown, FolderKanban, Inbox, LogOut, LayoutDashboard, ListTodo, Users, X } from '@lucide/vue'
+import { Building2, Check, ChevronDown, FolderKanban, Inbox, LogOut, LayoutDashboard, Users, X } from '@lucide/vue'
 
 
 // Store
