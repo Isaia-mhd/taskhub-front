@@ -50,17 +50,21 @@
             <ul v-else :class="[theme.border, 'divide-y']">
                 <li v-for="member in members" :key="member.id" class="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center">
                     <div class="flex min-w-0 flex-1 items-center gap-3">
-                        <span :class="[theme.elevated, theme.text, 'relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full text-xs font-semibold']">
+                        <button type="button" :class="[theme.elevated, theme.text, theme.primaryHover, 'relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full text-xs font-semibold transition-colors']" :aria-label="`View ${member.name}'s profile`" @click="openMemberProfile(member)">
                             {{ initials(member.name) }}
                             <img v-if="member.avatar" :src="member.avatar" :alt="''" class="absolute inset-0 h-full w-full object-cover" @error="$event.target.hidden = true" />
-                        </span>
+                        </button>
                         <div class="min-w-0">
-                            <p :class="[theme.text, 'truncate text-sm font-semibold']">{{ member.name }}</p>
+                            <button type="button" :class="[theme.text, theme.primaryHover, 'block max-w-full truncate text-left text-sm font-semibold transition-colors']" @click="openMemberProfile(member)">{{ member.name }}</button>
                             <p :class="[theme.textMuted, 'truncate text-xs']">{{ member.email }}</p>
-                            <p :class="[theme.textMuted, 'mt-1 text-[11px]']">{{ member.joined_at ? `Joined ${formatDate(member.joined_at)}` : 'Workspace member' }}</p>
+                            <div class="mt-1 flex flex-wrap items-center gap-2">
+                                <span :class="[roleClass(member.role), 'rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide']">{{ roleLabel(member.role) }}</span>
+                                <span :class="[theme.textMuted, 'text-[11px]']">{{ member.joined_at ? `Joined ${formatDate(member.joined_at)}` : 'Workspace member' }}</span>
+                            </div>
                         </div>
                     </div>
                     <div class="flex items-center justify-between gap-3 sm:justify-end">
+                        <button type="button" :class="[theme.textMuted, theme.primaryHover, 'rounded-md p-2 transition-colors']" :aria-label="`View ${member.name}'s profile`" title="View profile" @click="openMemberProfile(member)"><Eye class="h-4 w-4" /></button>
                         <label class="flex items-center gap-2">
                             <span :class="[theme.textMuted, 'text-xs']">Role</span>
                             <select
@@ -100,6 +104,33 @@
             </footer>
         </section>
 
+        <div v-if="selectedMember || isLoadingMember" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" @click.self="closeMemberProfile">
+            <section role="dialog" aria-modal="true" aria-labelledby="member-profile-title" :class="[theme.surface, theme.border, 'w-full max-w-md rounded-lg border p-6 shadow-2xl']" @keydown.esc="closeMemberProfile">
+                <div v-if="isLoadingMember" :class="[theme.textMuted, 'py-12 text-center text-sm']">Loading member profile...</div>
+                <template v-else-if="selectedMember">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <span :class="[theme.elevated, theme.text, 'relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full text-sm font-semibold']">
+                                {{ initials(selectedMember.name) }}
+                                <img v-if="selectedMember.avatar" :src="selectedMember.avatar" :alt="''" class="absolute inset-0 h-full w-full object-cover" @error="$event.target.hidden = true" />
+                            </span>
+                            <div class="min-w-0">
+                                <h2 id="member-profile-title" :class="[theme.text, 'truncate text-lg font-semibold']">{{ selectedMember.name }}</h2>
+                                <p :class="[theme.textMuted, 'truncate text-sm']">{{ selectedMember.email }}</p>
+                            </div>
+                        </div>
+                        <button type="button" :class="[theme.textMuted, 'rounded p-1']" aria-label="Close member profile" @click="closeMemberProfile"><X class="h-5 w-5" /></button>
+                    </div>
+                    <dl :class="[theme.border, 'mt-6 space-y-4 border-y py-4 text-sm']">
+                        <div class="flex items-center justify-between gap-4"><dt :class="theme.textMuted">Workspace role</dt><dd><span :class="[roleClass(selectedMember.role), 'rounded-full px-2 py-1 text-xs font-semibold uppercase tracking-wide']">{{ roleLabel(selectedMember.role) }}</span></dd></div>
+                        <div class="flex items-center justify-between gap-4"><dt :class="theme.textMuted">Joined workspace</dt><dd :class="[theme.text, 'text-right']">{{ selectedMember.joined_at ? formatDate(selectedMember.joined_at) : 'Not available' }}</dd></div>
+                        <div class="flex items-center justify-between gap-4"><dt :class="theme.textMuted">Account created</dt><dd :class="[theme.text, 'text-right']">{{ selectedMember.created_at ? formatDate(selectedMember.created_at) : 'Not available' }}</dd></div>
+                    </dl>
+                    <div class="mt-5 flex justify-end"><button type="button" :class="[theme.text, theme.elevated, 'rounded-md px-4 py-2 text-sm font-medium']" @click="closeMemberProfile">Close</button></div>
+                </template>
+            </section>
+        </div>
+
         <div v-if="pendingRemoval" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" @click.self="closeRemovalDialog">
             <section role="dialog" aria-modal="true" aria-labelledby="remove-member-title" :class="[theme.surface, theme.border, 'w-full max-w-md rounded-lg border p-6 shadow-2xl']">
                 <div class="mb-5 flex items-start justify-between gap-4">
@@ -125,10 +156,10 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { Check, ChevronLeft, ChevronRight, RefreshCw, Trash2, Users, X } from '@lucide/vue'
+import { ChevronLeft, ChevronRight, Eye, RefreshCw, Trash2, Users, X } from '@lucide/vue'
 import useThemeStore from '@/stores/theme'
 import useWorkspaceStore from '@/stores/workspace'
-import { changeWorkspaceMemberRole, getWorkspaceMembers, removeWorkspaceMember } from '@/services/workspaceMemberService'
+import { changeWorkspaceMemberRole, getWorkspaceMember, getWorkspaceMembers, removeWorkspaceMember } from '@/services/workspaceMemberService'
 
 const themeStore = useThemeStore()
 const workspaceStore = useWorkspaceStore()
@@ -145,6 +176,8 @@ const pageError = ref('')
 const removalError = ref('')
 const successMessage = ref('')
 const pendingRemoval = ref(null)
+const selectedMember = ref(null)
+const isLoadingMember = ref(false)
 const roleOptions = [
     { value: 'owner', label: 'Owner' },
     { value: 'admin', label: 'Admin' },
@@ -154,6 +187,13 @@ const roleOptions = [
 
 const initials = (name) => name?.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() ?? '?'
 const formatDate = (value) => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value))
+const roleLabel = (role) => roleOptions.find((option) => option.value === role)?.label ?? 'Member'
+const roleClass = (role) => ({
+    owner: 'bg-amber-400/15 text-amber-400',
+    admin: 'bg-violet-500/15 text-violet-400',
+    guest: 'bg-sky-500/15 text-sky-400',
+    member: 'bg-emerald-500/15 text-emerald-400',
+}[role] ?? 'bg-slate-500/15 text-slate-400')
 
 const loadMembers = async (page = 1) => {
     if (!currentWorkspaceId.value) return
@@ -181,12 +221,31 @@ const changeRole = async (member, role) => {
     try {
         await changeWorkspaceMemberRole(currentWorkspaceId.value, member.id, role)
         members.value = members.value.map((item) => item.id === member.id ? { ...item, role } : item)
+        if (selectedMember.value?.id === member.id) selectedMember.value = { ...selectedMember.value, role }
         successMessage.value = `${member.name}'s role was updated.`
     } catch (error) {
         pageError.value = error.message ?? 'Unable to update this member role.'
     } finally {
         changingMemberId.value = null
     }
+}
+
+const openMemberProfile = async (member) => {
+    if (!currentWorkspaceId.value || isLoadingMember.value) return
+    isLoadingMember.value = true
+    pageError.value = ''
+    try {
+        selectedMember.value = await getWorkspaceMember(currentWorkspaceId.value, member.id)
+    } catch (error) {
+        pageError.value = error.message ?? 'Unable to load this member profile.'
+    } finally {
+        isLoadingMember.value = false
+    }
+}
+
+const closeMemberProfile = () => {
+    if (isLoadingMember.value) return
+    selectedMember.value = null
 }
 
 const closeRemovalDialog = () => {
@@ -203,6 +262,7 @@ const confirmRemoval = async () => {
     try {
         await removeWorkspaceMember(currentWorkspaceId.value, member.id)
         members.value = members.value.filter((item) => item.id !== member.id)
+        if (selectedMember.value?.id === member.id) selectedMember.value = null
         totalMembers.value = Math.max(0, totalMembers.value - 1)
         successMessage.value = `${member.name} was removed from the workspace.`
         pendingRemoval.value = null

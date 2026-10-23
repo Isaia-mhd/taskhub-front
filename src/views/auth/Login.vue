@@ -96,9 +96,10 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight } from "@lucide/vue";
 import { ref, toRefs } from 'vue'
 import useAuthStore from '@/stores/auth'
 import { storeToRefs } from 'pinia'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 import useThemeStore from '@/stores/theme'
 import ErrorMessage from '@/components/ErrorMessage.vue'
 
@@ -122,7 +123,7 @@ const handleSubmit = async () => {
   loading.value = true
   try {
     await auth.login(credentials.value)
-    router.push({name: 'workspace'})
+    router.push(route.query.redirect || { name: 'workspace' })
 
   } catch (err) {
     error.value = err?.message;

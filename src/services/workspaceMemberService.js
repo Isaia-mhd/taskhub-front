@@ -6,6 +6,9 @@ export const getWorkspaceMembers = async (workspaceId, page = 1) => {
         const response = await apiV1Request('get', `workspace-members/${workspaceId}/members`, { params: { page } })
         const result = response.data.data
 
+        console.log(result);
+        
+
         if (Array.isArray(result)) {
             return { members: result, currentPage: page, lastPage: page, total: result.length }
         }
@@ -16,6 +19,15 @@ export const getWorkspaceMembers = async (workspaceId, page = 1) => {
             lastPage: result?.meta?.last_page ?? page,
             total: result?.meta?.total ?? result?.data?.length ?? 0,
         }
+    } catch (error) {
+        throw handleError(error)
+    }
+}
+
+export const getWorkspaceMember = async (workspaceId, memberId) => {
+    try {
+        const response = await apiV1Request('get', `workspace-members/${workspaceId}/members/${memberId}`)
+        return response.data.data
     } catch (error) {
         throw handleError(error)
     }

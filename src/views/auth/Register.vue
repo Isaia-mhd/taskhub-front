@@ -117,13 +117,14 @@
 import { User, Mail,  Lock, Eye, EyeOff, ShieldCheck, ArrowRight } from '@lucide/vue'
 import useAuthStore from '@/stores/auth'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ErrorMessage from '@/components/ErrorMessage.vue'
 import useThemeStore from '@/stores/theme'
 import { storeToRefs } from 'pinia'
 const { theme } = storeToRefs(useThemeStore())
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const error = ref(null)
 const account = ref({
   name: null,
@@ -149,7 +150,7 @@ const handleSubmit = async() => {
   loading.value = true
   try {
     await auth.register(account.value)
-    router.push({name: 'login'})
+    router.push({ name: 'login', query: route.query.redirect ? { redirect: route.query.redirect } : {} })
 
   } catch (err) {
     error.value = err?.message

@@ -9,6 +9,8 @@ import PublicLayout from '@/layouts/PublicLayout.vue'
 import Main from '@/views/workspace/Main.vue'
 import SpaceView from '@/views/workspace/space/SpaceView.vue'
 import MembersView from '@/views/workspace/members/MembersView.vue'
+import InvitationsView from '@/views/workspace/invitations/InvitationsView.vue'
+import InvitationView from '@/views/invitations/InvitationView.vue'
 
 const routes = [
   {
@@ -37,6 +39,12 @@ const routes = [
           guest: true
         }
       },
+      {
+        path: '/invitations/:token',
+        name: 'invitation.show',
+        component: InvitationView,
+        props: true,
+      },
     ]
   },
   {
@@ -61,6 +69,11 @@ const routes = [
         path: 'members',
         name: 'workspace.members',
         component: MembersView,
+      },
+      {
+        path: 'invitations',
+        name: 'workspace.invitations',
+        component: InvitationsView,
       },
     ]
   }

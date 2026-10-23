@@ -46,6 +46,13 @@
                         Members
                     </router-link>
                     <router-link
+                        :to="{ name: 'workspace.invitations' }"
+                        :class="[$route.name === 'workspace.invitations' ? theme.primaryBg : '', $route.name === 'workspace.invitations' ? theme.primaryText : theme.text, theme.primaryHover, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5']"
+                    >
+                        <Mail class="h-4 w-4" />
+                        Invitations
+                    </router-link>
+                    <router-link
                         :to="{ name: 'workspace.spaces' }"
                         :class="[$route.name === 'workspace.spaces' ? theme.primaryBg : '', $route.name === 'workspace.spaces' ? theme.primaryText : theme.text, theme.primaryHover, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5']"
                     >
@@ -148,7 +155,7 @@ import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 import useWorkspaceStore from '@/stores/workspace'
-import { Building2, Check, ChevronDown, FolderKanban, Inbox, LogOut, LayoutDashboard, Users, X } from '@lucide/vue'
+import { Building2, Check, ChevronDown, FolderKanban, Inbox, LogOut, LayoutDashboard, Mail, Users, X } from '@lucide/vue'
 
 
 // Store
