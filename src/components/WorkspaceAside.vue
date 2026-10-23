@@ -53,6 +53,20 @@
                         Invitations
                     </router-link>
                     <router-link
+                        :to="{ name: 'workspace.statuses' }"
+                        :class="[$route.name === 'workspace.statuses' ? theme.primaryBg : '', $route.name === 'workspace.statuses' ? theme.primaryText : theme.text, theme.primaryHover, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5']"
+                    >
+                        <ListTodo class="h-4 w-4" />
+                        Statuses
+                    </router-link>
+                    <router-link
+                        :to="{ name: 'workspace.priorities' }"
+                        :class="[$route.name === 'workspace.priorities' ? theme.primaryBg : '', $route.name === 'workspace.priorities' ? theme.primaryText : theme.text, theme.primaryHover, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5']"
+                    >
+                        <Flag class="h-4 w-4" />
+                        Priorities
+                    </router-link>
+                    <router-link
                         :to="{ name: 'workspace.spaces' }"
                         :class="[$route.name === 'workspace.spaces' ? theme.primaryBg : '', $route.name === 'workspace.spaces' ? theme.primaryText : theme.text, theme.primaryHover, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5']"
                     >
@@ -79,8 +93,8 @@
                     <router-link
                         v-for="space in currentWorkspace.spaces"
                         :key="space.id"
-                        :to="{ name: 'workspace.spaces' }"
-                        :class="[theme.text, theme.primaryHover, 'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-white/5']"
+                        :to="{ name: 'workspace.space.show', params: { spaceId: space.id } }"
+                        :class="[$route.params.spaceId === String(space.id) ? theme.elevated : '', theme.text, theme.primaryHover, 'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-white/5']"
                     >
                         <span class="h-2 w-2 shrink-0 rounded-full" :style="{ backgroundColor: space.color || '#F59E0B' }"></span>
                         <span class="truncate">{{ space.name }}</span>
@@ -155,7 +169,7 @@ import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 import useWorkspaceStore from '@/stores/workspace'
-import { Building2, Check, ChevronDown, FolderKanban, Inbox, LogOut, LayoutDashboard, Mail, Users, X } from '@lucide/vue'
+import { Building2, Check, ChevronDown, Flag, FolderKanban, Inbox, ListTodo, LogOut, LayoutDashboard, Mail, Users, X } from '@lucide/vue'
 
 
 // Store
