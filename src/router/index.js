@@ -10,6 +10,8 @@ import Main from '@/views/workspace/Main.vue'
 import SpaceView from '@/views/workspace/space/SpaceView.vue'
 import MembersView from '@/views/workspace/members/MembersView.vue'
 import InvitationsView from '@/views/workspace/invitations/InvitationsView.vue'
+import StatusesView from '@/views/workspace/statuses/StatusesView.vue'
+import PrioritiesView from '@/views/workspace/priorities/PrioritiesView.vue'
 import InvitationView from '@/views/invitations/InvitationView.vue'
 
 const routes = [
@@ -66,6 +68,12 @@ const routes = [
         component: SpaceView,
       },
       {
+        path: 'spaces/:spaceId',
+        name: 'workspace.space.show',
+        component: () => import('@/views/workspace/space/SpaceDetailView.vue'),
+        props: true,
+      },
+      {
         path: 'members',
         name: 'workspace.members',
         component: MembersView,
@@ -74,6 +82,16 @@ const routes = [
         path: 'invitations',
         name: 'workspace.invitations',
         component: InvitationsView,
+      },
+      {
+        path: 'statuses',
+        name: 'workspace.statuses',
+        component: StatusesView,
+      },
+      {
+        path: 'priorities',
+        name: 'workspace.priorities',
+        component: PrioritiesView,
       },
     ]
   }
