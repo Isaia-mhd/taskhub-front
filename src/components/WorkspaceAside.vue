@@ -67,6 +67,13 @@
                         Priorities
                     </router-link>
                     <router-link
+                        :to="{ name: 'workspace.tags' }"
+                        :class="[$route.name === 'workspace.tags' ? theme.primaryBg : '', $route.name === 'workspace.tags' ? theme.primaryText : theme.text, theme.primaryHover, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5']"
+                    >
+                        <Tags class="h-4 w-4" />
+                        Tags
+                    </router-link>
+                    <router-link
                         :to="{ name: 'workspace.spaces' }"
                         :class="[$route.name === 'workspace.spaces' ? theme.primaryBg : '', $route.name === 'workspace.spaces' ? theme.primaryText : theme.text, theme.primaryHover, 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5']"
                     >
@@ -169,7 +176,7 @@ import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 import useWorkspaceStore from '@/stores/workspace'
-import { Building2, Check, ChevronDown, Flag, FolderKanban, Inbox, ListTodo, LogOut, LayoutDashboard, Mail, Users, X } from '@lucide/vue'
+import { Building2, Check, ChevronDown, Flag, FolderKanban, Inbox, ListTodo, LogOut, LayoutDashboard, Mail, Tags, Users, X } from '@lucide/vue'
 
 
 // Store

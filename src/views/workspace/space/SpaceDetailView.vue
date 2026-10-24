@@ -1,5 +1,5 @@
 <template>
-    <main class="mx-auto max-w-7xl space-y-6">
+    <main class="mx-auto max-w-8xl space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <button type="button" :class="[theme.textMuted, theme.primaryHover, 'inline-flex items-center gap-2 text-sm transition-colors']" @click="router.push({ name: 'workspace.spaces' })">
                 <ArrowLeft class="h-4 w-4" /> All spaces
@@ -52,7 +52,7 @@
                             <button type="button" :class="[theme.textMuted, theme.primaryHover, 'rounded-md p-1.5']" :aria-label="`Add list to ${folder.name}`" title="Add list" @click="openListForm(folder)"><Plus class="h-4 w-4" /></button>
                         </div>
                         <div v-if="folderLists(folder.id).length" class="divide-y divide-slate-500/10">
-                            <TaskListPanel v-for="list in folderLists(folder.id)" :key="list.id" :list="list" :statuses="statuses" :tasks="tasksByList[list.id] || []" :theme="theme" :collapsed-sections="collapsedSections" :saving-status-id="savingStatusId" @toggle-section="toggleSection" @add-task="openTaskForm(list)" @edit-list="openListForm(null, list)" @delete-list="pendingListDeletion = list" @edit-task="openTaskForm(list, $event)" @delete-task="pendingTaskDeletion = $event" @change-status="changeStatus" />
+                            <TaskListPanel v-for="list in folderLists(folder.id)" :key="list.id" :list="list" :statuses="statuses" :tasks="tasksByList[list.id] || []" :theme="theme" :collapsed-sections="collapsedSections" :saving-status-id="savingStatusId" @toggle-section="toggleSection" @add-task="openTaskForm(list)" @edit-list="openListForm(null, list)" @delete-list="pendingListDeletion = list" @edit-task="openTaskForm(list, $event)" @view-task="viewTask" @complete-task="completeTask" @reorder-tasks="reorderTasks(list, $event)" @delete-task="pendingTaskDeletion = $event" @change-status="changeStatus" />
                         </div>
                         <p v-else :class="[theme.textMuted, 'px-4 py-4 text-xs']">No task lists in this folder yet.</p>
                     </section>
@@ -65,7 +65,7 @@
                             <button type="button" :class="[theme.textMuted, theme.primaryHover, 'rounded-md p-1.5']" aria-label="Add task list" title="Add task list" @click="openListForm()"><Plus class="h-4 w-4" /></button>
                         </div>
                         <div class="divide-y divide-slate-500/10">
-                            <TaskListPanel v-for="list in ungroupedLists" :key="list.id" :list="list" :statuses="statuses" :tasks="tasksByList[list.id] || []" :theme="theme" :collapsed-sections="collapsedSections" :saving-status-id="savingStatusId" @toggle-section="toggleSection" @add-task="openTaskForm(list)" @edit-list="openListForm(null, list)" @delete-list="pendingListDeletion = list" @edit-task="openTaskForm(list, $event)" @delete-task="pendingTaskDeletion = $event" @change-status="changeStatus" />
+                            <TaskListPanel v-for="list in ungroupedLists" :key="list.id" :list="list" :statuses="statuses" :tasks="tasksByList[list.id] || []" :theme="theme" :collapsed-sections="collapsedSections" :saving-status-id="savingStatusId" @toggle-section="toggleSection" @add-task="openTaskForm(list)" @edit-list="openListForm(null, list)" @delete-list="pendingListDeletion = list" @edit-task="openTaskForm(list, $event)" @view-task="viewTask" @complete-task="completeTask" @reorder-tasks="reorderTasks(list, $event)" @delete-task="pendingTaskDeletion = $event" @change-status="changeStatus" />
                         </div>
                     </section>
 
@@ -99,6 +99,15 @@
                         <label class="block"><span :class="[theme.text, 'mb-1.5 block text-sm font-medium']">Due date <span :class="[theme.textMuted, 'font-normal']">(optional)</span></span><input v-model="taskForm.due_at" type="date" :class="[theme.bg, theme.text, theme.border, 'w-full rounded-md border px-3 py-2.5 text-sm outline-none focus:border-amber-400']" /></label>
                         <label class="block"><span :class="[theme.text, 'mb-1.5 block text-sm font-medium']">Estimate (minutes)</span><input v-model.number="taskForm.estimate_minutes" type="number" min="0" :class="[theme.bg, theme.text, theme.border, 'w-full rounded-md border px-3 py-2.5 text-sm outline-none focus:border-amber-400']" placeholder="0" /></label>
                     </div>
+                    <fieldset v-if="tags.length" class="block">
+                        <legend :class="[theme.text, 'mb-2 text-sm font-medium']">Tags <span :class="[theme.textMuted, 'font-normal']">(optional)</span></legend>
+                        <div :class="[theme.border, theme.bg, 'flex flex-wrap gap-2 rounded-md border p-3']">
+                            <label v-for="tag in tags" :key="tag.id" class="inline-flex cursor-pointer items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium" :style="{ backgroundColor: tag.color, color: '#0f172a' }">
+                                <input v-model="taskForm.tag_ids" type="checkbox" :value="tag.id" class="accent-slate-900" />
+                                {{ tag.name }}
+                            </label>
+                        </div>
+                    </fieldset>
                 </div>
                 <div :class="[theme.border, 'mt-6 flex justify-end gap-2 border-t pt-4']"><button type="button" :disabled="isSavingTask" :class="[theme.text, theme.elevated, 'rounded-md px-4 py-2 text-sm']" @click="closeTaskForm">Cancel</button><button type="submit" :disabled="isSavingTask || !statuses.length || !priorities.length" :class="[theme.primaryBg, theme.primaryText, theme.primaryBgHover, 'min-w-32 rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-60']">{{ isSavingTask ? 'Saving...' : editingTask ? 'Save changes' : 'Create task' }}</button></div>
             </form>
@@ -125,9 +134,10 @@ import useWorkspaceStore from '@/stores/workspace'
 import { getSpace } from '@/services/spaceService'
 import { getSpaceFolders } from '@/services/folderService'
 import { createTaskList, deleteTaskList, getSpaceTaskLists, updateTaskList } from '@/services/taskListService'
-import { changeTaskPriority, changeTaskStatus, createTask, deleteTask, getTaskListTasks, updateTask } from '@/services/taskService'
+import { changeTaskPriority, changeTaskStatus, createTask, deleteTask, getTaskListTasks, reorderTaskListTasks, toggleTaskCompletion, updateTask } from '@/services/taskService'
 import { getWorkspaceStatuses } from '@/services/statusService'
 import { getWorkspacePriorities } from '@/services/priorityService'
+import { attachTaskTags, getWorkspaceTags, removeTaskTag } from '@/services/tagService'
 
 const TaskListPanel = defineComponent({
     props: {
@@ -138,7 +148,7 @@ const TaskListPanel = defineComponent({
         collapsedSections: { type: Object, required: true },
         savingStatusId: { type: [String, Number], default: null },
     },
-    emits: ['toggle-section', 'add-task', 'edit-list', 'delete-list', 'edit-task', 'delete-task', 'change-status'],
+    emits: ['toggle-section', 'add-task', 'edit-list', 'delete-list', 'edit-task', 'view-task', 'complete-task', 'reorder-tasks', 'delete-task', 'change-status'],
     setup(props, { emit }) {
         const groupedTasks = computed(() => props.statuses.map((status) => ({
             status,
@@ -149,19 +159,51 @@ const TaskListPanel = defineComponent({
             ? [...groupedTasks.value, { status: { id: 'unassigned', name: 'Other' }, tasks: hiddenTasks.value }]
             : groupedTasks.value)
         const sectionKey = (statusId) => `${props.list.id}:${statusId}`
+        const listKey = `list:${props.list.id}`
         const sectionCollapsed = (statusId) => Boolean(props.collapsedSections[sectionKey(statusId)])
+        const listCollapsed = () => Boolean(props.collapsedSections[listKey])
+        let draggedTaskId = null
+        const startTaskDrag = (event, task) => {
+            draggedTaskId = task.id
+            event.dataTransfer.effectAllowed = 'move'
+            event.dataTransfer.setData('text/plain', String(task.id))
+        }
+        const dropTask = (event, targetTask) => {
+            event.preventDefault()
+            const sourceId = draggedTaskId ?? event.dataTransfer.getData('text/plain')
+            draggedTaskId = null
+            if (!sourceId || String(sourceId) === String(targetTask.id)) return
+            const orderedTasks = [...props.tasks]
+            const sourceIndex = orderedTasks.findIndex((task) => String(task.id) === String(sourceId))
+            const targetIndex = orderedTasks.findIndex((task) => String(task.id) === String(targetTask.id))
+            if (sourceIndex < 0 || targetIndex < 0) return
+            const [movedTask] = orderedTasks.splice(sourceIndex, 1)
+            orderedTasks.splice(targetIndex, 0, movedTask)
+            emit('reorder-tasks', orderedTasks)
+        }
 
         return () => h('section', { class: 'px-4 py-3' }, [
             h('div', { class: 'mb-3 flex flex-wrap items-center gap-2' }, [
-                h(ListTodo, { class: `${props.theme.primary} h-4 w-4 shrink-0` }),
-                h('h4', { class: `min-w-0 flex-1 truncate text-sm font-semibold ${props.theme.text}` }, props.list.name),
-                h('span', { class: `text-xs ${props.theme.textMuted}` }, `${props.tasks.length}`),
+                h('button', {
+                    type: 'button',
+                    class: `flex min-w-0 flex-1 items-center gap-2 rounded-md text-left ${props.theme.primaryHover}`,
+                    title: `${listCollapsed() ? 'Expand' : 'Collapse'} ${props.list.name}`,
+                    'aria-label': `${listCollapsed() ? 'Expand' : 'Collapse'} ${props.list.name}`,
+                    'aria-expanded': String(!listCollapsed()),
+                    onClick: () => emit('toggle-section', listKey),
+                }, [
+                    h(listCollapsed() ? ChevronRight : ChevronDown, { class: `h-4 w-4 shrink-0 ${props.theme.textMuted}` }),
+                    h(ListTodo, { class: `${props.theme.primary} h-4 w-4 shrink-0` }),
+                    h('h4', { class: `min-w-0 flex-1 truncate text-sm font-semibold ${props.theme.text}` }, props.list.name),
+                    h('span', { class: `text-xs ${props.theme.textMuted}` }, `${props.tasks.length}`),
+                ]),
                 h('button', { type: 'button', class: `rounded-md p-1.5 ${props.theme.textMuted} ${props.theme.primaryHover}`, title: 'Add task', 'aria-label': `Add task to ${props.list.name}`, onClick: () => emit('add-task') }, [h(Plus, { class: 'h-4 w-4' })]),
                 h('button', { type: 'button', class: `rounded-md p-1.5 ${props.theme.textMuted} ${props.theme.primaryHover}`, title: 'Edit list', 'aria-label': `Edit ${props.list.name}`, onClick: () => emit('edit-list') }, [h(Pencil, { class: 'h-4 w-4' })]),
                 h('button', { type: 'button', class: 'rounded-md p-1.5 text-red-400 hover:bg-red-500/10', title: 'Delete list', 'aria-label': `Delete ${props.list.name}`, onClick: () => emit('delete-list') }, [h(Trash2, { class: 'h-4 w-4' })]),
             ]),
-            groups.value.length
-                ? h('div', { class: 'space-y-3' }, groups.value.map(({ status, tasks }) => {
+            !listCollapsed()
+                ? groups.value.length
+                    ? h('div', { class: 'space-y-3' }, groups.value.map(({ status, tasks }) => {
                     const collapsed = sectionCollapsed(status.id)
                     return h('section', { key: sectionKey(status.id), class: `overflow-hidden rounded-md border ${props.theme.border}` }, [
                         h('button', {
@@ -177,19 +219,45 @@ const TaskListPanel = defineComponent({
                         !collapsed
                             ? tasks.length
                                 ? h('div', { class: 'overflow-x-auto' }, [
-                                    h('table', { class: 'w-full min-w-[640px] text-left' }, [
+                                    h('table', { class: 'w-full min-w-[760px] text-left' }, [
                                         h('thead', {}, [h('tr', { class: `border-t ${props.theme.border}` }, [
                                             h('th', { class: `px-3 py-2 text-[10px] font-medium uppercase tracking-wide ${props.theme.textMuted}` }, 'Task'),
                                             h('th', { class: `px-3 py-2 text-[10px] font-medium uppercase tracking-wide ${props.theme.textMuted}` }, 'Status'),
                                             h('th', { class: `px-3 py-2 text-[10px] font-medium uppercase tracking-wide ${props.theme.textMuted}` }, 'Priority'),
+                                            h('th', { class: `px-3 py-2 text-[10px] font-medium uppercase tracking-wide ${props.theme.textMuted}` }, 'Assignees'),
                                             h('th', { class: `px-3 py-2 text-[10px] font-medium uppercase tracking-wide ${props.theme.textMuted}` }, 'Due date'),
                                             h('th', { class: `w-20 px-3 py-2 text-[10px] font-medium uppercase tracking-wide ${props.theme.textMuted}` }, 'Actions'),
                                         ])]),
-                                        h('tbody', {}, tasks.map((task) => h('tr', { key: task.id, class: `border-t ${props.theme.border} ${props.theme.primaryHover}` }, [
+                                        h('tbody', {}, tasks.map((task) => h('tr', {
+                                            key: task.id,
+                                            draggable: true,
+                                            class: `border-t ${props.theme.border} ${props.theme.primaryHover} cursor-grab`,
+                                            onDragstart: (event) => startTaskDrag(event, task),
+                                            onDragover: (event) => event.preventDefault(),
+                                            onDrop: (event) => dropTask(event, task),
+                                            onDragend: () => { draggedTaskId = null },
+                                        }, [
                                             h('td', { class: 'max-w-0 px-3 py-2' }, [
-                                                h('button', { type: 'button', class: `flex max-w-full items-center gap-2 text-left text-sm ${props.theme.text}`, onClick: () => emit('edit-task', task) }, [
-                                                    h(task.completed_at || status.type === 'closed' ? CheckCircle2 : Circle, { class: `h-4 w-4 shrink-0 ${task.completed_at || status.type === 'closed' ? 'text-emerald-400' : props.theme.textMuted}` }),
-                                                    h('span', { class: 'truncate' }, task.title),
+                                                h('div', { class: 'flex min-w-0 flex-col items-start gap-1.5' }, [
+                                                    h('div', { class: 'flex max-w-full items-center gap-2' }, [
+                                                        h('button', {
+                                                            type: 'button',
+                                                            class: 'shrink-0 rounded-full',
+                                                            title: task.completed_at ? 'Reopen task' : 'Complete task',
+                                                            'aria-label': task.completed_at ? `Reopen ${task.title}` : `Complete ${task.title}`,
+                                                            onClick: () => emit('complete-task', task),
+                                                        }, [h(task.completed_at ? CheckCircle2 : Circle, { class: `h-4 w-4 ${task.completed_at ? 'text-emerald-400' : props.theme.textMuted}` })]),
+                                                        h('button', { type: 'button', class: `min-w-0 truncate text-left text-sm ${props.theme.text}`, onClick: () => emit('view-task', task) }, [
+                                                        h('span', { class: 'truncate' }, task.title),
+                                                        ]),
+                                                    ]),
+                                                    task.tags?.length
+                                                        ? h('div', { class: 'flex flex-wrap gap-1 pl-6' }, task.tags.map((tag) => h('span', {
+                                                            key: tag.id,
+                                                            class: 'rounded-full px-2 py-0.5 text-[10px] font-medium',
+                                                            style: { backgroundColor: tag.color, color: '#0f172a' },
+                                                        }, tag.name)))
+                                                        : null,
                                                 ]),
                                             ]),
                                             h('td', { class: 'px-3 py-2' }, [
@@ -202,6 +270,19 @@ const TaskListPanel = defineComponent({
                                                 }, props.statuses.map((item) => h('option', { key: item.id, value: item.id }, item.name))),
                                             ]),
                                             h('td', { class: `px-3 py-2 text-xs ${props.theme.textMuted}` }, task.priority?.name || '—'),
+                                            h('td', { class: 'px-3 py-2' }, task.assignees?.length
+                                                ? h('div', { class: 'flex items-center -space-x-2' }, task.assignees.map((assignee) => h('span', {
+                                                    key: assignee.id,
+                                                    class: `relative grid h-7 w-7 place-items-center overflow-hidden rounded-full border text-[9px] font-semibold ${props.theme.border} ${props.theme.elevated} ${props.theme.text}`,
+                                                    title: assignee.name,
+                                                    'aria-label': assignee.name,
+                                                }, [
+                                                    assignee.avatar
+                                                        ? h('img', { src: assignee.avatar, alt: '', class: 'absolute inset-0 h-full w-full object-cover' })
+                                                        : null,
+                                                    h('span', { class: 'truncate' }, assignee.name?.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || '?'),
+                                                ])))
+                                                : h('span', { class: `text-xs ${props.theme.textMuted}` }, 'Unassigned')),
                                             h('td', { class: `px-3 py-2 text-xs ${props.theme.textMuted}` }, task.due_at ? new Date(task.due_at).toLocaleDateString() : '—'),
                                             h('td', { class: 'px-3 py-2' }, [
                                                 h('div', { class: 'flex items-center gap-1' }, [
@@ -216,7 +297,8 @@ const TaskListPanel = defineComponent({
                             : null,
                     ])
                 }))
-                : h('p', { class: `rounded-md px-2 py-3 text-xs ${props.theme.textMuted}` }, 'Add workspace statuses to group tasks into sections.'),
+                    : h('p', { class: `rounded-md px-2 py-3 text-xs ${props.theme.textMuted}` }, 'Add workspace statuses to group tasks into sections.')
+                : null,
         ])
     },
 })
@@ -233,6 +315,7 @@ const taskLists = ref([])
 const tasksByList = ref({})
 const statuses = ref([])
 const priorities = ref([])
+const tags = ref([])
 const isLoading = ref(true)
 const pageError = ref('')
 const successMessage = ref('')
@@ -257,7 +340,7 @@ const taskForm = ref(emptyTaskForm())
 let requestId = 0
 
 function emptyTaskForm() {
-    return { title: '', description: '', status_id: '', priority_id: '', due_at: '', estimate_minutes: null }
+    return { title: '', description: '', status_id: '', priority_id: '', due_at: '', estimate_minutes: null, tag_ids: [] }
 }
 
 const folderLists = (folderId) => taskLists.value.filter((list) => String(list.folder?.id) === String(folderId))
@@ -283,12 +366,13 @@ const loadSpace = async () => {
         folders.value = [...folderData].sort((first, second) => Number(first.position) - Number(second.position))
         taskLists.value = [...listData].sort((first, second) => Number(first.position) - Number(second.position))
         const workspaceId = spaceData.workspace?.id ?? currentWorkspace.value?.id
-        const [statusData, priorityData] = workspaceId
-            ? await Promise.all([getWorkspaceStatuses(workspaceId), getWorkspacePriorities(workspaceId)])
-            : [[], []]
+        const [statusData, priorityData, tagData] = workspaceId
+            ? await Promise.all([getWorkspaceStatuses(workspaceId), getWorkspacePriorities(workspaceId), getWorkspaceTags(workspaceId)])
+            : [[], [], []]
         if (currentRequest !== requestId) return
         statuses.value = [...statusData].sort((first, second) => Number(first.position) - Number(second.position))
         priorities.value = [...priorityData].sort((first, second) => Number(first.level) - Number(second.level))
+        tags.value = tagData
         const taskEntries = await Promise.all(taskLists.value.map(async (list) => [
             list.id,
             await getTaskListTasks(list.id),
@@ -308,6 +392,40 @@ const refreshListTasks = async (listId) => {
 
 const toggleSection = (key) => {
     collapsedSections.value = { ...collapsedSections.value, [key]: !collapsedSections.value[key] }
+}
+
+const viewTask = (task) => {
+    router.push({ name: 'workspace.task.show', params: { taskId: task.id } })
+}
+
+const completeTask = async (task) => {
+    pageError.value = ''
+    try {
+        const saved = await toggleTaskCompletion(task.id)
+        const listId = task.list_id ?? task.task_list?.id
+        if (listId) {
+            tasksByList.value = {
+                ...tasksByList.value,
+                [listId]: (tasksByList.value[listId] || []).map((item) =>
+                    String(item.id) === String(task.id) ? { ...item, ...saved } : item
+                ),
+            }
+        }
+    } catch (error) {
+        pageError.value = error.message ?? 'Unable to update task completion.'
+    }
+}
+
+const reorderTasks = async (list, orderedTasks) => {
+    const previousTasks = tasksByList.value[list.id] || []
+    tasksByList.value = { ...tasksByList.value, [list.id]: orderedTasks }
+    pageError.value = ''
+    try {
+        await reorderTaskListTasks(list.id, orderedTasks)
+    } catch (error) {
+        tasksByList.value = { ...tasksByList.value, [list.id]: previousTasks }
+        pageError.value = error.message ?? 'Unable to reorder tasks.'
+    }
 }
 
 const openListForm = (folder = null, list = null) => {
@@ -360,6 +478,7 @@ const openTaskForm = (list, task = null) => {
         priority_id: task.priority?.id ?? task.priority_id ?? priorities.value[0]?.id ?? '',
         due_at: task.due_at ? task.due_at.slice(0, 10) : '',
         estimate_minutes: task.estimate_minutes ?? null,
+        tag_ids: (task.tags ?? []).map((tag) => tag.id),
     } : {
         ...emptyTaskForm(),
         status_id: statuses.value[0]?.id ?? '',
@@ -395,15 +514,18 @@ const saveTask = async () => {
             if (String(previousPriorityId) !== String(taskForm.value.priority_id)) {
                 await changeTaskPriority(editingTask.value.id, Number(taskForm.value.priority_id))
             }
+            await syncTaskTags(editingTask.value.id, editingTask.value.tags ?? [], taskForm.value.tag_ids)
             successMessage.value = `${data.title} was updated.`
         } else {
-            await createTask({
+            const createdTask = await createTask({
                 ...data,
                 status_id: Number(taskForm.value.status_id),
                 priority_id: Number(taskForm.value.priority_id),
                 list_id: list.id,
                 position: (tasksByList.value[list.id] || []).length,
             })
+            editingTask.value = createdTask
+            await syncTaskTags(createdTask.id, [], taskForm.value.tag_ids)
             successMessage.value = `${data.title} was created.`
         }
         await refreshListTasks(list.id)
@@ -413,6 +535,17 @@ const saveTask = async () => {
     } finally {
         isSavingTask.value = false
     }
+}
+
+const syncTaskTags = async (taskId, previousTags, selectedTagIds) => {
+    const previousIds = previousTags.map((tag) => String(tag.id))
+    const selectedIds = selectedTagIds.map(String)
+    const tagIdsToAdd = selectedTagIds.filter((tagId) => !previousIds.includes(String(tagId)))
+    const tagsToRemove = previousTags.filter((tag) => !selectedIds.includes(String(tag.id)))
+    const operations = []
+    if (tagIdsToAdd.length) operations.push(attachTaskTags(taskId, tagIdsToAdd))
+    operations.push(...tagsToRemove.map((tag) => removeTaskTag(taskId, tag.id)))
+    await Promise.all(operations)
 }
 
 const changeStatus = async (task, statusId) => {
