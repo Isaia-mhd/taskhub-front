@@ -219,11 +219,12 @@ const TaskListPanel = defineComponent({
                         !collapsed
                             ? tasks.length
                                 ? h('div', { class: 'overflow-x-auto' }, [
-                                    h('table', { class: 'w-full min-w-[640px] text-left' }, [
+                                    h('table', { class: 'w-full min-w-[760px] text-left' }, [
                                         h('thead', {}, [h('tr', { class: `border-t ${props.theme.border}` }, [
                                             h('th', { class: `px-3 py-2 text-[10px] font-medium uppercase tracking-wide ${props.theme.textMuted}` }, 'Task'),
                                             h('th', { class: `px-3 py-2 text-[10px] font-medium uppercase tracking-wide ${props.theme.textMuted}` }, 'Status'),
                                             h('th', { class: `px-3 py-2 text-[10px] font-medium uppercase tracking-wide ${props.theme.textMuted}` }, 'Priority'),
+                                            h('th', { class: `px-3 py-2 text-[10px] font-medium uppercase tracking-wide ${props.theme.textMuted}` }, 'Assignees'),
                                             h('th', { class: `px-3 py-2 text-[10px] font-medium uppercase tracking-wide ${props.theme.textMuted}` }, 'Due date'),
                                             h('th', { class: `w-20 px-3 py-2 text-[10px] font-medium uppercase tracking-wide ${props.theme.textMuted}` }, 'Actions'),
                                         ])]),
@@ -269,6 +270,19 @@ const TaskListPanel = defineComponent({
                                                 }, props.statuses.map((item) => h('option', { key: item.id, value: item.id }, item.name))),
                                             ]),
                                             h('td', { class: `px-3 py-2 text-xs ${props.theme.textMuted}` }, task.priority?.name || '—'),
+                                            h('td', { class: 'px-3 py-2' }, task.assignees?.length
+                                                ? h('div', { class: 'flex items-center -space-x-2' }, task.assignees.map((assignee) => h('span', {
+                                                    key: assignee.id,
+                                                    class: `relative grid h-7 w-7 place-items-center overflow-hidden rounded-full border text-[9px] font-semibold ${props.theme.border} ${props.theme.elevated} ${props.theme.text}`,
+                                                    title: assignee.name,
+                                                    'aria-label': assignee.name,
+                                                }, [
+                                                    assignee.avatar
+                                                        ? h('img', { src: assignee.avatar, alt: '', class: 'absolute inset-0 h-full w-full object-cover' })
+                                                        : null,
+                                                    h('span', { class: 'truncate' }, assignee.name?.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || '?'),
+                                                ])))
+                                                : h('span', { class: `text-xs ${props.theme.textMuted}` }, 'Unassigned')),
                                             h('td', { class: `px-3 py-2 text-xs ${props.theme.textMuted}` }, task.due_at ? new Date(task.due_at).toLocaleDateString() : '—'),
                                             h('td', { class: 'px-3 py-2' }, [
                                                 h('div', { class: 'flex items-center gap-1' }, [
