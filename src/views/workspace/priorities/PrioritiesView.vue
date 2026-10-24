@@ -1,5 +1,5 @@
 <template>
-    <main class="mx-auto max-w-5xl space-y-6">
+    <main class="mx-auto max-w-8xl space-y-6">
         <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
                 <p :class="[theme.primary, 'mb-2 text-xs font-semibold uppercase tracking-widest']">Workspace settings</p>
