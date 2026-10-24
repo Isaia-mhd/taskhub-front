@@ -1,5 +1,5 @@
 <template>
-  <div :class="['flex justify-between items-center']">
+  <div :class="['w-full flex justify-between items-center']">
     <h1 :class="[theme.primary, 'text-xl font-semibold']">TaskHub</h1>
     <label
       :class="[
