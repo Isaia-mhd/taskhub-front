@@ -75,6 +75,12 @@ const routes = [
         props: true,
       },
       {
+        path: 'tasks/:taskId',
+        name: 'workspace.task.show',
+        component: () => import('@/views/workspace/tasks/TaskDetailView.vue'),
+        props: true,
+      },
+      {
         path: 'members',
         name: 'workspace.members',
         component: MembersView,

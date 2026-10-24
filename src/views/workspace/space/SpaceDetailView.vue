@@ -1,5 +1,5 @@
 <template>
-    <main class="mx-auto max-w-7xl space-y-6">
+    <main class="mx-auto max-w-8xl space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <button type="button" :class="[theme.textMuted, theme.primaryHover, 'inline-flex items-center gap-2 text-sm transition-colors']" @click="router.push({ name: 'workspace.spaces' })">
                 <ArrowLeft class="h-4 w-4" /> All spaces
@@ -52,7 +52,7 @@
                             <button type="button" :class="[theme.textMuted, theme.primaryHover, 'rounded-md p-1.5']" :aria-label="`Add list to ${folder.name}`" title="Add list" @click="openListForm(folder)"><Plus class="h-4 w-4" /></button>
                         </div>
                         <div v-if="folderLists(folder.id).length" class="divide-y divide-slate-500/10">
-                            <TaskListPanel v-for="list in folderLists(folder.id)" :key="list.id" :list="list" :statuses="statuses" :tasks="tasksByList[list.id] || []" :theme="theme" :collapsed-sections="collapsedSections" :saving-status-id="savingStatusId" @toggle-section="toggleSection" @add-task="openTaskForm(list)" @edit-list="openListForm(null, list)" @delete-list="pendingListDeletion = list" @edit-task="openTaskForm(list, $event)" @delete-task="pendingTaskDeletion = $event" @change-status="changeStatus" />
+                            <TaskListPanel v-for="list in folderLists(folder.id)" :key="list.id" :list="list" :statuses="statuses" :tasks="tasksByList[list.id] || []" :theme="theme" :collapsed-sections="collapsedSections" :saving-status-id="savingStatusId" @toggle-section="toggleSection" @add-task="openTaskForm(list)" @edit-list="openListForm(null, list)" @delete-list="pendingListDeletion = list" @edit-task="openTaskForm(list, $event)" @view-task="viewTask" @complete-task="completeTask" @reorder-tasks="reorderTasks(list, $event)" @delete-task="pendingTaskDeletion = $event" @change-status="changeStatus" />
                         </div>
                         <p v-else :class="[theme.textMuted, 'px-4 py-4 text-xs']">No task lists in this folder yet.</p>
                     </section>
@@ -65,7 +65,7 @@
                             <button type="button" :class="[theme.textMuted, theme.primaryHover, 'rounded-md p-1.5']" aria-label="Add task list" title="Add task list" @click="openListForm()"><Plus class="h-4 w-4" /></button>
                         </div>
                         <div class="divide-y divide-slate-500/10">
-                            <TaskListPanel v-for="list in ungroupedLists" :key="list.id" :list="list" :statuses="statuses" :tasks="tasksByList[list.id] || []" :theme="theme" :collapsed-sections="collapsedSections" :saving-status-id="savingStatusId" @toggle-section="toggleSection" @add-task="openTaskForm(list)" @edit-list="openListForm(null, list)" @delete-list="pendingListDeletion = list" @edit-task="openTaskForm(list, $event)" @delete-task="pendingTaskDeletion = $event" @change-status="changeStatus" />
+                            <TaskListPanel v-for="list in ungroupedLists" :key="list.id" :list="list" :statuses="statuses" :tasks="tasksByList[list.id] || []" :theme="theme" :collapsed-sections="collapsedSections" :saving-status-id="savingStatusId" @toggle-section="toggleSection" @add-task="openTaskForm(list)" @edit-list="openListForm(null, list)" @delete-list="pendingListDeletion = list" @edit-task="openTaskForm(list, $event)" @view-task="viewTask" @complete-task="completeTask" @reorder-tasks="reorderTasks(list, $event)" @delete-task="pendingTaskDeletion = $event" @change-status="changeStatus" />
                         </div>
                     </section>
 
@@ -134,7 +134,7 @@ import useWorkspaceStore from '@/stores/workspace'
 import { getSpace } from '@/services/spaceService'
 import { getSpaceFolders } from '@/services/folderService'
 import { createTaskList, deleteTaskList, getSpaceTaskLists, updateTaskList } from '@/services/taskListService'
-import { changeTaskPriority, changeTaskStatus, createTask, deleteTask, getTaskListTasks, updateTask } from '@/services/taskService'
+import { changeTaskPriority, changeTaskStatus, createTask, deleteTask, getTaskListTasks, reorderTaskListTasks, toggleTaskCompletion, updateTask } from '@/services/taskService'
 import { getWorkspaceStatuses } from '@/services/statusService'
 import { getWorkspacePriorities } from '@/services/priorityService'
 import { attachTaskTags, getWorkspaceTags, removeTaskTag } from '@/services/tagService'
@@ -148,7 +148,7 @@ const TaskListPanel = defineComponent({
         collapsedSections: { type: Object, required: true },
         savingStatusId: { type: [String, Number], default: null },
     },
-    emits: ['toggle-section', 'add-task', 'edit-list', 'delete-list', 'edit-task', 'delete-task', 'change-status'],
+    emits: ['toggle-section', 'add-task', 'edit-list', 'delete-list', 'edit-task', 'view-task', 'complete-task', 'reorder-tasks', 'delete-task', 'change-status'],
     setup(props, { emit }) {
         const groupedTasks = computed(() => props.statuses.map((status) => ({
             status,
@@ -162,6 +162,25 @@ const TaskListPanel = defineComponent({
         const listKey = `list:${props.list.id}`
         const sectionCollapsed = (statusId) => Boolean(props.collapsedSections[sectionKey(statusId)])
         const listCollapsed = () => Boolean(props.collapsedSections[listKey])
+        let draggedTaskId = null
+        const startTaskDrag = (event, task) => {
+            draggedTaskId = task.id
+            event.dataTransfer.effectAllowed = 'move'
+            event.dataTransfer.setData('text/plain', String(task.id))
+        }
+        const dropTask = (event, targetTask) => {
+            event.preventDefault()
+            const sourceId = draggedTaskId ?? event.dataTransfer.getData('text/plain')
+            draggedTaskId = null
+            if (!sourceId || String(sourceId) === String(targetTask.id)) return
+            const orderedTasks = [...props.tasks]
+            const sourceIndex = orderedTasks.findIndex((task) => String(task.id) === String(sourceId))
+            const targetIndex = orderedTasks.findIndex((task) => String(task.id) === String(targetTask.id))
+            if (sourceIndex < 0 || targetIndex < 0) return
+            const [movedTask] = orderedTasks.splice(sourceIndex, 1)
+            orderedTasks.splice(targetIndex, 0, movedTask)
+            emit('reorder-tasks', orderedTasks)
+        }
 
         return () => h('section', { class: 'px-4 py-3' }, [
             h('div', { class: 'mb-3 flex flex-wrap items-center gap-2' }, [
@@ -208,12 +227,28 @@ const TaskListPanel = defineComponent({
                                             h('th', { class: `px-3 py-2 text-[10px] font-medium uppercase tracking-wide ${props.theme.textMuted}` }, 'Due date'),
                                             h('th', { class: `w-20 px-3 py-2 text-[10px] font-medium uppercase tracking-wide ${props.theme.textMuted}` }, 'Actions'),
                                         ])]),
-                                        h('tbody', {}, tasks.map((task) => h('tr', { key: task.id, class: `border-t ${props.theme.border} ${props.theme.primaryHover}` }, [
+                                        h('tbody', {}, tasks.map((task) => h('tr', {
+                                            key: task.id,
+                                            draggable: true,
+                                            class: `border-t ${props.theme.border} ${props.theme.primaryHover} cursor-grab`,
+                                            onDragstart: (event) => startTaskDrag(event, task),
+                                            onDragover: (event) => event.preventDefault(),
+                                            onDrop: (event) => dropTask(event, task),
+                                            onDragend: () => { draggedTaskId = null },
+                                        }, [
                                             h('td', { class: 'max-w-0 px-3 py-2' }, [
                                                 h('div', { class: 'flex min-w-0 flex-col items-start gap-1.5' }, [
-                                                    h('button', { type: 'button', class: `flex max-w-full items-center gap-2 text-left text-sm ${props.theme.text}`, onClick: () => emit('edit-task', task) }, [
-                                                        h(task.completed_at || status.type === 'closed' ? CheckCircle2 : Circle, { class: `h-4 w-4 shrink-0 ${task.completed_at || status.type === 'closed' ? 'text-emerald-400' : props.theme.textMuted}` }),
+                                                    h('div', { class: 'flex max-w-full items-center gap-2' }, [
+                                                        h('button', {
+                                                            type: 'button',
+                                                            class: 'shrink-0 rounded-full',
+                                                            title: task.completed_at ? 'Reopen task' : 'Complete task',
+                                                            'aria-label': task.completed_at ? `Reopen ${task.title}` : `Complete ${task.title}`,
+                                                            onClick: () => emit('complete-task', task),
+                                                        }, [h(task.completed_at ? CheckCircle2 : Circle, { class: `h-4 w-4 ${task.completed_at ? 'text-emerald-400' : props.theme.textMuted}` })]),
+                                                        h('button', { type: 'button', class: `min-w-0 truncate text-left text-sm ${props.theme.text}`, onClick: () => emit('view-task', task) }, [
                                                         h('span', { class: 'truncate' }, task.title),
+                                                        ]),
                                                     ]),
                                                     task.tags?.length
                                                         ? h('div', { class: 'flex flex-wrap gap-1 pl-6' }, task.tags.map((tag) => h('span', {
@@ -343,6 +378,40 @@ const refreshListTasks = async (listId) => {
 
 const toggleSection = (key) => {
     collapsedSections.value = { ...collapsedSections.value, [key]: !collapsedSections.value[key] }
+}
+
+const viewTask = (task) => {
+    router.push({ name: 'workspace.task.show', params: { taskId: task.id } })
+}
+
+const completeTask = async (task) => {
+    pageError.value = ''
+    try {
+        const saved = await toggleTaskCompletion(task.id)
+        const listId = task.list_id ?? task.task_list?.id
+        if (listId) {
+            tasksByList.value = {
+                ...tasksByList.value,
+                [listId]: (tasksByList.value[listId] || []).map((item) =>
+                    String(item.id) === String(task.id) ? { ...item, ...saved } : item
+                ),
+            }
+        }
+    } catch (error) {
+        pageError.value = error.message ?? 'Unable to update task completion.'
+    }
+}
+
+const reorderTasks = async (list, orderedTasks) => {
+    const previousTasks = tasksByList.value[list.id] || []
+    tasksByList.value = { ...tasksByList.value, [list.id]: orderedTasks }
+    pageError.value = ''
+    try {
+        await reorderTaskListTasks(list.id, orderedTasks)
+    } catch (error) {
+        tasksByList.value = { ...tasksByList.value, [list.id]: previousTasks }
+        pageError.value = error.message ?? 'Unable to reorder tasks.'
+    }
 }
 
 const openListForm = (folder = null, list = null) => {
