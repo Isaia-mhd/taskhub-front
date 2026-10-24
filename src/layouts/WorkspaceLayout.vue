@@ -1,21 +1,21 @@
 <template>
-    <div class="w-full flex justify-between min-h-screen">
-        <!-- asside -->
-        <WorkspaceAside :isLoadingWorkspaces="isLoadingWorkspaces" :workspaceLoadError="workspaceLoadError"/>
+    <div class="flex min-h-screen w-full flex-col gap-2 p-2 md:flex-row">
+        <WorkspaceAside
+            :is-collapsed="isSidebarCollapsed"
+            :isLoadingWorkspaces="isLoadingWorkspaces"
+            :workspaceLoadError="workspaceLoadError"
+            @toggle-sidebar="toggleSidebar"
+        />
 
-        <div class="w-full flex flex-col gap-3 w-[80%] m-2">
-            <!-- header -->
-            <div :class="[theme.bg, theme.border, 'border rounded-xl p-4']">
+        <div class="flex min-w-0 flex-1 flex-col gap-3">
+            <div :class="[theme.bg, theme.border, 'flex items-center gap-3 rounded-xl border p-3']">
                 <WorkspaceHeader />
             </div>
 
-            <!-- Message -->
             <div v-if="currentError" :class="[theme.border, 'border rounded-md px-4 py-2 text-red-400']" role="alert">
                 <p :class="['']">{{ currentError }}</p>
             </div>
-            
 
-            <!-- main -->
             <div :class="[theme.bg, theme.border, 'border content min-h-0 flex-1 overflow-auto rounded-xl p-4']">
                 <Loading v-if="isLoadingWorkspaces" :full-screen="false" message="Loading workspaces..." />
                 <div v-else-if="workspaceLoadError" :class="['flex h-full min-h-48 flex-col items-center justify-center gap-3 text-center']" role="alert">
@@ -53,7 +53,6 @@
 import useAuthStore from '@/stores/auth'
 import useThemeStore from '@/stores/theme'
 import { storeToRefs } from 'pinia'
-// import { FolderKanban, Inbox, LogOut,  LayoutDashboard, ListTodo, Settings } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
 import { getWorkspaces } from '@/services/workspaceService'
 import WorkspaceHeader from '@/components/WorkspaceHeader.vue'
@@ -75,6 +74,12 @@ const router = useRouter()
 const isLoadingWorkspaces = ref(true)
 
 const workspaceLoadError = ref('')
+const isSidebarCollapsed = ref(localStorage.getItem('workspaceSidebarVisible') === 'false')
+
+const toggleSidebar = () => {
+    isSidebarCollapsed.value = !isSidebarCollapsed.value
+    localStorage.setItem('workspaceSidebarVisible', String(!isSidebarCollapsed.value))
+}
 
 const loadWorkspaces = async () => {
 
