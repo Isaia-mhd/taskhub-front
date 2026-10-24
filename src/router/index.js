@@ -12,6 +12,7 @@ import MembersView from '@/views/workspace/members/MembersView.vue'
 import InvitationsView from '@/views/workspace/invitations/InvitationsView.vue'
 import StatusesView from '@/views/workspace/statuses/StatusesView.vue'
 import PrioritiesView from '@/views/workspace/priorities/PrioritiesView.vue'
+import TagsView from '@/views/workspace/tags/TagsView.vue'
 import InvitationView from '@/views/invitations/InvitationView.vue'
 
 const routes = [
@@ -92,6 +93,11 @@ const routes = [
         path: 'priorities',
         name: 'workspace.priorities',
         component: PrioritiesView,
+      },
+      {
+        path: 'tags',
+        name: 'workspace.tags',
+        component: TagsView,
       },
     ]
   }

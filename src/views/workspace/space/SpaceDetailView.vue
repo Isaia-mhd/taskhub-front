@@ -99,6 +99,15 @@
                         <label class="block"><span :class="[theme.text, 'mb-1.5 block text-sm font-medium']">Due date <span :class="[theme.textMuted, 'font-normal']">(optional)</span></span><input v-model="taskForm.due_at" type="date" :class="[theme.bg, theme.text, theme.border, 'w-full rounded-md border px-3 py-2.5 text-sm outline-none focus:border-amber-400']" /></label>
                         <label class="block"><span :class="[theme.text, 'mb-1.5 block text-sm font-medium']">Estimate (minutes)</span><input v-model.number="taskForm.estimate_minutes" type="number" min="0" :class="[theme.bg, theme.text, theme.border, 'w-full rounded-md border px-3 py-2.5 text-sm outline-none focus:border-amber-400']" placeholder="0" /></label>
                     </div>
+                    <fieldset v-if="tags.length" class="block">
+                        <legend :class="[theme.text, 'mb-2 text-sm font-medium']">Tags <span :class="[theme.textMuted, 'font-normal']">(optional)</span></legend>
+                        <div :class="[theme.border, theme.bg, 'flex flex-wrap gap-2 rounded-md border p-3']">
+                            <label v-for="tag in tags" :key="tag.id" class="inline-flex cursor-pointer items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium" :style="{ backgroundColor: tag.color, color: '#0f172a' }">
+                                <input v-model="taskForm.tag_ids" type="checkbox" :value="tag.id" class="accent-slate-900" />
+                                {{ tag.name }}
+                            </label>
+                        </div>
+                    </fieldset>
                 </div>
                 <div :class="[theme.border, 'mt-6 flex justify-end gap-2 border-t pt-4']"><button type="button" :disabled="isSavingTask" :class="[theme.text, theme.elevated, 'rounded-md px-4 py-2 text-sm']" @click="closeTaskForm">Cancel</button><button type="submit" :disabled="isSavingTask || !statuses.length || !priorities.length" :class="[theme.primaryBg, theme.primaryText, theme.primaryBgHover, 'min-w-32 rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-60']">{{ isSavingTask ? 'Saving...' : editingTask ? 'Save changes' : 'Create task' }}</button></div>
             </form>
@@ -128,6 +137,7 @@ import { createTaskList, deleteTaskList, getSpaceTaskLists, updateTaskList } fro
 import { changeTaskPriority, changeTaskStatus, createTask, deleteTask, getTaskListTasks, updateTask } from '@/services/taskService'
 import { getWorkspaceStatuses } from '@/services/statusService'
 import { getWorkspacePriorities } from '@/services/priorityService'
+import { attachTaskTags, getWorkspaceTags, removeTaskTag } from '@/services/tagService'
 
 const TaskListPanel = defineComponent({
     props: {
@@ -149,19 +159,32 @@ const TaskListPanel = defineComponent({
             ? [...groupedTasks.value, { status: { id: 'unassigned', name: 'Other' }, tasks: hiddenTasks.value }]
             : groupedTasks.value)
         const sectionKey = (statusId) => `${props.list.id}:${statusId}`
+        const listKey = `list:${props.list.id}`
         const sectionCollapsed = (statusId) => Boolean(props.collapsedSections[sectionKey(statusId)])
+        const listCollapsed = () => Boolean(props.collapsedSections[listKey])
 
         return () => h('section', { class: 'px-4 py-3' }, [
             h('div', { class: 'mb-3 flex flex-wrap items-center gap-2' }, [
-                h(ListTodo, { class: `${props.theme.primary} h-4 w-4 shrink-0` }),
-                h('h4', { class: `min-w-0 flex-1 truncate text-sm font-semibold ${props.theme.text}` }, props.list.name),
-                h('span', { class: `text-xs ${props.theme.textMuted}` }, `${props.tasks.length}`),
+                h('button', {
+                    type: 'button',
+                    class: `flex min-w-0 flex-1 items-center gap-2 rounded-md text-left ${props.theme.primaryHover}`,
+                    title: `${listCollapsed() ? 'Expand' : 'Collapse'} ${props.list.name}`,
+                    'aria-label': `${listCollapsed() ? 'Expand' : 'Collapse'} ${props.list.name}`,
+                    'aria-expanded': String(!listCollapsed()),
+                    onClick: () => emit('toggle-section', listKey),
+                }, [
+                    h(listCollapsed() ? ChevronRight : ChevronDown, { class: `h-4 w-4 shrink-0 ${props.theme.textMuted}` }),
+                    h(ListTodo, { class: `${props.theme.primary} h-4 w-4 shrink-0` }),
+                    h('h4', { class: `min-w-0 flex-1 truncate text-sm font-semibold ${props.theme.text}` }, props.list.name),
+                    h('span', { class: `text-xs ${props.theme.textMuted}` }, `${props.tasks.length}`),
+                ]),
                 h('button', { type: 'button', class: `rounded-md p-1.5 ${props.theme.textMuted} ${props.theme.primaryHover}`, title: 'Add task', 'aria-label': `Add task to ${props.list.name}`, onClick: () => emit('add-task') }, [h(Plus, { class: 'h-4 w-4' })]),
                 h('button', { type: 'button', class: `rounded-md p-1.5 ${props.theme.textMuted} ${props.theme.primaryHover}`, title: 'Edit list', 'aria-label': `Edit ${props.list.name}`, onClick: () => emit('edit-list') }, [h(Pencil, { class: 'h-4 w-4' })]),
                 h('button', { type: 'button', class: 'rounded-md p-1.5 text-red-400 hover:bg-red-500/10', title: 'Delete list', 'aria-label': `Delete ${props.list.name}`, onClick: () => emit('delete-list') }, [h(Trash2, { class: 'h-4 w-4' })]),
             ]),
-            groups.value.length
-                ? h('div', { class: 'space-y-3' }, groups.value.map(({ status, tasks }) => {
+            !listCollapsed()
+                ? groups.value.length
+                    ? h('div', { class: 'space-y-3' }, groups.value.map(({ status, tasks }) => {
                     const collapsed = sectionCollapsed(status.id)
                     return h('section', { key: sectionKey(status.id), class: `overflow-hidden rounded-md border ${props.theme.border}` }, [
                         h('button', {
@@ -187,9 +210,18 @@ const TaskListPanel = defineComponent({
                                         ])]),
                                         h('tbody', {}, tasks.map((task) => h('tr', { key: task.id, class: `border-t ${props.theme.border} ${props.theme.primaryHover}` }, [
                                             h('td', { class: 'max-w-0 px-3 py-2' }, [
-                                                h('button', { type: 'button', class: `flex max-w-full items-center gap-2 text-left text-sm ${props.theme.text}`, onClick: () => emit('edit-task', task) }, [
-                                                    h(task.completed_at || status.type === 'closed' ? CheckCircle2 : Circle, { class: `h-4 w-4 shrink-0 ${task.completed_at || status.type === 'closed' ? 'text-emerald-400' : props.theme.textMuted}` }),
-                                                    h('span', { class: 'truncate' }, task.title),
+                                                h('div', { class: 'flex min-w-0 flex-col items-start gap-1.5' }, [
+                                                    h('button', { type: 'button', class: `flex max-w-full items-center gap-2 text-left text-sm ${props.theme.text}`, onClick: () => emit('edit-task', task) }, [
+                                                        h(task.completed_at || status.type === 'closed' ? CheckCircle2 : Circle, { class: `h-4 w-4 shrink-0 ${task.completed_at || status.type === 'closed' ? 'text-emerald-400' : props.theme.textMuted}` }),
+                                                        h('span', { class: 'truncate' }, task.title),
+                                                    ]),
+                                                    task.tags?.length
+                                                        ? h('div', { class: 'flex flex-wrap gap-1 pl-6' }, task.tags.map((tag) => h('span', {
+                                                            key: tag.id,
+                                                            class: 'rounded-full px-2 py-0.5 text-[10px] font-medium',
+                                                            style: { backgroundColor: tag.color, color: '#0f172a' },
+                                                        }, tag.name)))
+                                                        : null,
                                                 ]),
                                             ]),
                                             h('td', { class: 'px-3 py-2' }, [
@@ -216,7 +248,8 @@ const TaskListPanel = defineComponent({
                             : null,
                     ])
                 }))
-                : h('p', { class: `rounded-md px-2 py-3 text-xs ${props.theme.textMuted}` }, 'Add workspace statuses to group tasks into sections.'),
+                    : h('p', { class: `rounded-md px-2 py-3 text-xs ${props.theme.textMuted}` }, 'Add workspace statuses to group tasks into sections.')
+                : null,
         ])
     },
 })
@@ -233,6 +266,7 @@ const taskLists = ref([])
 const tasksByList = ref({})
 const statuses = ref([])
 const priorities = ref([])
+const tags = ref([])
 const isLoading = ref(true)
 const pageError = ref('')
 const successMessage = ref('')
@@ -257,7 +291,7 @@ const taskForm = ref(emptyTaskForm())
 let requestId = 0
 
 function emptyTaskForm() {
-    return { title: '', description: '', status_id: '', priority_id: '', due_at: '', estimate_minutes: null }
+    return { title: '', description: '', status_id: '', priority_id: '', due_at: '', estimate_minutes: null, tag_ids: [] }
 }
 
 const folderLists = (folderId) => taskLists.value.filter((list) => String(list.folder?.id) === String(folderId))
@@ -283,12 +317,13 @@ const loadSpace = async () => {
         folders.value = [...folderData].sort((first, second) => Number(first.position) - Number(second.position))
         taskLists.value = [...listData].sort((first, second) => Number(first.position) - Number(second.position))
         const workspaceId = spaceData.workspace?.id ?? currentWorkspace.value?.id
-        const [statusData, priorityData] = workspaceId
-            ? await Promise.all([getWorkspaceStatuses(workspaceId), getWorkspacePriorities(workspaceId)])
-            : [[], []]
+        const [statusData, priorityData, tagData] = workspaceId
+            ? await Promise.all([getWorkspaceStatuses(workspaceId), getWorkspacePriorities(workspaceId), getWorkspaceTags(workspaceId)])
+            : [[], [], []]
         if (currentRequest !== requestId) return
         statuses.value = [...statusData].sort((first, second) => Number(first.position) - Number(second.position))
         priorities.value = [...priorityData].sort((first, second) => Number(first.level) - Number(second.level))
+        tags.value = tagData
         const taskEntries = await Promise.all(taskLists.value.map(async (list) => [
             list.id,
             await getTaskListTasks(list.id),
@@ -360,6 +395,7 @@ const openTaskForm = (list, task = null) => {
         priority_id: task.priority?.id ?? task.priority_id ?? priorities.value[0]?.id ?? '',
         due_at: task.due_at ? task.due_at.slice(0, 10) : '',
         estimate_minutes: task.estimate_minutes ?? null,
+        tag_ids: (task.tags ?? []).map((tag) => tag.id),
     } : {
         ...emptyTaskForm(),
         status_id: statuses.value[0]?.id ?? '',
@@ -395,15 +431,18 @@ const saveTask = async () => {
             if (String(previousPriorityId) !== String(taskForm.value.priority_id)) {
                 await changeTaskPriority(editingTask.value.id, Number(taskForm.value.priority_id))
             }
+            await syncTaskTags(editingTask.value.id, editingTask.value.tags ?? [], taskForm.value.tag_ids)
             successMessage.value = `${data.title} was updated.`
         } else {
-            await createTask({
+            const createdTask = await createTask({
                 ...data,
                 status_id: Number(taskForm.value.status_id),
                 priority_id: Number(taskForm.value.priority_id),
                 list_id: list.id,
                 position: (tasksByList.value[list.id] || []).length,
             })
+            editingTask.value = createdTask
+            await syncTaskTags(createdTask.id, [], taskForm.value.tag_ids)
             successMessage.value = `${data.title} was created.`
         }
         await refreshListTasks(list.id)
@@ -413,6 +452,17 @@ const saveTask = async () => {
     } finally {
         isSavingTask.value = false
     }
+}
+
+const syncTaskTags = async (taskId, previousTags, selectedTagIds) => {
+    const previousIds = previousTags.map((tag) => String(tag.id))
+    const selectedIds = selectedTagIds.map(String)
+    const tagIdsToAdd = selectedTagIds.filter((tagId) => !previousIds.includes(String(tagId)))
+    const tagsToRemove = previousTags.filter((tag) => !selectedIds.includes(String(tag.id)))
+    const operations = []
+    if (tagIdsToAdd.length) operations.push(attachTaskTags(taskId, tagIdsToAdd))
+    operations.push(...tagsToRemove.map((tag) => removeTaskTag(taskId, tag.id)))
+    await Promise.all(operations)
 }
 
 const changeStatus = async (task, statusId) => {
