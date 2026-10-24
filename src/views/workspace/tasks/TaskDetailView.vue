@@ -49,6 +49,50 @@
 
             <div class="grid gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_280px]">
                 <section class="space-y-6" aria-label="Task information">
+                    <section :class="[theme.border, 'rounded-lg border p-4']" aria-labelledby="subtasks-heading">
+                        <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                            <button
+                                type="button"
+                                class="flex min-w-0 flex-1 items-center gap-2 text-left"
+                                :aria-expanded="!subtasksCollapsed"
+                                aria-controls="task-subtasks-content"
+                                @click="subtasksCollapsed = !subtasksCollapsed"
+                            >
+                                <ChevronRight v-if="subtasksCollapsed" :class="[theme.textMuted, 'h-4 w-4 shrink-0']" />
+                                <ChevronDown v-else :class="[theme.textMuted, 'h-4 w-4 shrink-0']" />
+                                <span class="min-w-0 flex items-center justify-center gap-2">
+                                    <span id="subtasks-heading" :class="[theme.text, 'block text-sm font-semibold']">Subtasks</span>
+                                    <span :class="[theme.textMuted, 'block text-xs']">({{ completedSubtaskCount }} of {{ subtasks.length }} completed)</span>
+                                </span>
+                            </button>
+                            <button type="button" :class="[theme.textMuted, theme.primaryHover, 'inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs']" @click="openSubtaskForm()"><Plus class="h-3.5 w-3.5" /> Add subtask</button>
+                        </div>
+                        <div v-if="!subtasksCollapsed" id="task-subtasks-content">
+                            <div v-if="subtasks.length" class="space-y-1">
+                                <div v-for="subtask in subtasks" :key="subtask.id" :class="[theme.primaryHover, 'flex items-center gap-2 rounded-md px-2 py-2']">
+                                    <button type="button" :disabled="savingSubtaskId === subtask.id" :class="['shrink-0 rounded-full disabled:opacity-50', subtask.completed_at ? 'text-emerald-400' : theme.textMuted]" :aria-label="subtask.completed_at ? `Reopen ${subtask.title}` : `Complete ${subtask.title}`" @click="toggleSubtaskCompletion(subtask)">
+                                        <CheckCircle2 v-if="subtask.completed_at" class="h-4 w-4" />
+                                        <Circle v-else class="h-4 w-4" />
+                                    </button>
+                                    <button type="button" :class="[theme.text, 'min-w-0 flex-1 truncate text-left text-sm']" @click="openSubtask(subtask)">{{ subtask.title }}</button>
+                                    <button type="button" :class="[theme.textMuted, theme.primaryHover, 'rounded p-1']" :aria-label="`Edit ${subtask.title}`" title="Edit subtask" @click="openSubtaskForm(subtask)"><Pencil class="h-3.5 w-3.5" /></button>
+                                    <button type="button" :class="[theme.textMuted, 'rounded p-1 text-red-400 hover:bg-red-500/10']" :aria-label="`Delete ${subtask.title}`" title="Delete subtask" @click="pendingSubtaskDeletion = subtask"><Trash2 class="h-3.5 w-3.5" /></button>
+                                </div>
+                            </div>
+                            <p v-else :class="[theme.textMuted, 'py-2 text-xs']">Break this task into smaller steps.</p>
+
+                            <form v-if="isSubtaskFormOpen" :class="[theme.border, 'mt-3 space-y-3 border-t pt-3']" @submit.prevent="saveSubtask">
+                                <p v-if="subtaskFormError" class="text-xs text-red-400" role="alert">{{ subtaskFormError }}</p>
+                                <input v-model.trim="subtaskForm.title" type="text" maxlength="255" required autofocus :class="[theme.bg, theme.text, theme.border, 'w-full rounded-md border px-3 py-2 text-sm outline-none focus:border-amber-400']" :placeholder="editingSubtask ? 'Subtask title' : 'What needs to be done?'" aria-label="Subtask title" />
+                                <textarea v-model.trim="subtaskForm.description" rows="2" :class="[theme.bg, theme.text, theme.border, 'w-full resize-y rounded-md border px-3 py-2 text-sm outline-none focus:border-amber-400']" placeholder="Description (optional)" aria-label="Subtask description"></textarea>
+                                <div class="flex justify-end gap-2">
+                                    <button type="button" :disabled="isSavingSubtask" :class="[theme.textMuted, 'rounded-md px-3 py-1.5 text-xs']" @click="closeSubtaskForm">Cancel</button>
+                                    <button type="submit" :disabled="isSavingSubtask" :class="[theme.primaryBg, theme.primaryText, theme.primaryBgHover, 'rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50']">{{ isSavingSubtask ? 'Saving...' : editingSubtask ? 'Save subtask' : 'Create subtask' }}</button>
+                                </div>
+                            </form>
+                        </div>
+                    </section>
+
                     <div>
                         <h2 :class="[theme.text, 'mb-3 text-sm font-semibold']">Tags</h2>
                         <div v-if="tags.length" class="flex flex-wrap gap-2">
@@ -81,6 +125,36 @@
 
                 <aside :class="[theme.border, 'h-fit space-y-4 rounded-lg border p-4']" aria-label="Task properties">
                     <h2 :class="[theme.text, 'text-sm font-semibold']">Properties</h2>
+                    <section :class="[theme.border, 'space-y-3 border-b pb-4']" aria-labelledby="assignees-heading">
+                        <div class="flex items-center justify-between gap-2">
+                            <h3 id="assignees-heading" :class="[theme.text, 'text-xs font-semibold']">Assignees</h3>
+                            <span :class="[theme.textMuted, 'text-[10px]']">{{ assignees.length }} assigned</span>
+                        </div>
+                        <div v-if="assignees.length" class="flex flex-wrap gap-2">
+                            <span v-for="assignee in assignees" :key="assignee.id" :class="[theme.elevated, 'inline-flex items-center gap-1.5 rounded-full py-1 pl-1 pr-1.5']">
+                                <span :class="[theme.primaryBg, theme.primaryText, 'relative grid h-6 w-6 place-items-center overflow-hidden rounded-full text-[9px] font-semibold']">
+                                    <img v-if="assignee.avatar" :src="assignee.avatar" alt="" class="absolute inset-0 h-full w-full object-cover" @error="$event.target.hidden = true" />
+                                    <span>{{ initials(assignee.name) }}</span>
+                                </span>
+                                <span :class="[theme.text, 'max-w-24 truncate text-[11px]']">{{ assignee.name }}</span>
+                                <button type="button" :disabled="savingAssigneeId === assignee.id" :class="[theme.textMuted, 'rounded-full p-0.5 hover:text-red-400 disabled:opacity-50']" :aria-label="`Remove ${assignee.name}`" @click="toggleAssignee(assignee, false)"><X class="h-3 w-3" /></button>
+                            </span>
+                        </div>
+                        <p v-else :class="[theme.textMuted, 'text-xs']">No one assigned yet.</p>
+                        <details v-if="assignableUsers.length" :class="[theme.border, 'rounded-md border']">
+                            <summary :class="[theme.textMuted, 'cursor-pointer list-none px-2.5 py-2 text-xs']"><Users class="mr-1 inline h-3.5 w-3.5" /> Assign people</summary>
+                            <div :class="[theme.border, 'max-h-48 space-y-1 overflow-y-auto border-t p-2']">
+                                <label v-for="member in assignableUsers" :key="member.id" :class="[theme.primaryHover, 'flex cursor-pointer items-center gap-2 rounded px-1.5 py-1.5']">
+                                    <input type="checkbox" :checked="assignees.some((item) => String(item.id) === String(member.id))" :disabled="savingAssigneeId !== null" class="accent-amber-500" @change="toggleAssignee(member, $event.target.checked)" />
+                                    <span :class="[theme.primaryBg, theme.primaryText, 'relative grid h-6 w-6 shrink-0 place-items-center overflow-hidden rounded-full text-[9px] font-semibold']">
+                                        <img v-if="member.avatar" :src="member.avatar" alt="" class="absolute inset-0 h-full w-full object-cover" @error="$event.target.hidden = true" />
+                                        <span>{{ initials(member.name) }}</span>
+                                    </span>
+                                    <span :class="[theme.text, 'min-w-0 flex-1 truncate text-xs']">{{ member.name }}</span>
+                                </label>
+                            </div>
+                        </details>
+                    </section>
                     <label class="block">
                         <span :class="[theme.textMuted, 'mb-1.5 block text-xs font-medium']">Status</span>
                         <select :value="task.status_id" :class="[theme.bg, theme.text, theme.border, 'w-full rounded-md border px-2.5 py-2 text-sm outline-none focus:border-amber-400']" @change="saveStatus($event.target.value)">
@@ -116,19 +190,31 @@
                     <button type="button" :disabled="isDeleting" :class="[theme.text, theme.elevated, 'rounded-md px-4 py-2 text-sm']" @click="showDeleteConfirmation = false">Cancel</button>
                     <button type="button" :disabled="isDeleting" class="rounded-md bg-red-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" @click="deleteCurrentTask">{{ isDeleting ? 'Deleting...' : 'Delete task' }}</button>
                 </div>
+
+            </section>
+        </div>
+        <div v-if="pendingSubtaskDeletion" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" @click.self="closeSubtaskDeleteConfirmation">
+            <section role="dialog" aria-modal="true" aria-labelledby="delete-subtask-title" :class="[theme.surface, theme.border, 'w-full max-w-md rounded-lg border p-6 shadow-2xl']">
+                <h2 id="delete-subtask-title" :class="[theme.text, 'text-lg font-semibold']">Delete subtask?</h2>
+                <p :class="[theme.textMuted, 'mt-2 text-sm']">This will permanently delete <strong :class="theme.text">{{ pendingSubtaskDeletion.title }}</strong>.</p>
+                <p v-if="subtaskDeleteError" class="mt-3 text-sm text-red-400" role="alert">{{ subtaskDeleteError }}</p>
+                <div :class="[theme.border, 'mt-6 flex justify-end gap-2 border-t pt-4']">
+                    <button type="button" :disabled="isDeletingSubtask" :class="[theme.text, theme.elevated, 'rounded-md px-4 py-2 text-sm']" @click="closeSubtaskDeleteConfirmation">Cancel</button>
+                    <button type="button" :disabled="isDeletingSubtask" class="rounded-md bg-red-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" @click="deleteCurrentSubtask">{{ isDeletingSubtask ? 'Deleting...' : 'Delete subtask' }}</button>
+                </div>
             </section>
         </div>
     </main>
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, CheckCircle2, Circle, RefreshCw, Trash2 } from '@lucide/vue'
+import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Circle, Pencil, Plus, RefreshCw, Trash2, Users, X } from '@lucide/vue'
 import useThemeStore from '@/stores/theme'
 import useWorkspaceStore from '@/stores/workspace'
-import { deleteTask, getTask, moveTask, updateTask, changeTaskPriority, changeTaskStatus, updateTaskDueDate, updateTaskStartDate, toggleTaskCompletion } from '@/services/taskService'
+import { assignTaskUsers, changeTaskPriority, changeTaskStatus, createTaskSubtask, deleteTask, deleteTaskSubtask, getTask, getTaskAssigneeOptions, getTaskAssignees, getTaskSubtasks, moveTask, removeTaskAssignee, toggleTaskCompletion, updateTask, updateTaskDueDate, updateTaskStartDate, updateTaskSubtask } from '@/services/taskService'
 import { getSpaceTaskLists } from '@/services/taskListService'
 import { getWorkspaceStatuses } from '@/services/statusService'
 import { getWorkspacePriorities } from '@/services/priorityService'
@@ -145,17 +231,34 @@ const statuses = ref([])
 const priorities = ref([])
 const tags = ref([])
 const lists = ref([])
+const subtasks = ref([])
+const assignees = ref([])
+const assignableUsers = ref([])
 const isLoading = ref(true)
 const isSavingDetails = ref(false)
+const isSavingSubtask = ref(false)
+const isDeletingSubtask = ref(false)
 const isMoving = ref(false)
 const isDeleting = ref(false)
 const savingTagId = ref(null)
+const savingSubtaskId = ref(null)
+const savingAssigneeId = ref(null)
+const subtasksCollapsed = ref(false)
+const isSubtaskFormOpen = ref(false)
+const editingSubtask = ref(null)
+const pendingSubtaskDeletion = ref(null)
 const showDeleteConfirmation = ref(false)
 const pageError = ref('')
 const deleteError = ref('')
+const subtaskFormError = ref('')
+const subtaskDeleteError = ref('')
 const successMessage = ref('')
 const editForm = ref({ title: '', description: '', estimate_minutes: null })
+const subtaskForm = ref({ title: '', description: '' })
 let requestId = 0
+
+const completedSubtaskCount = computed(() => subtasks.value.filter((subtask) => Boolean(subtask.completed_at)).length)
+const initials = (name) => name?.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() ?? '?'
 
 const loadTask = async () => {
     const currentRequest = ++requestId
@@ -167,7 +270,7 @@ const loadTask = async () => {
         const taskData = await getTask(route.params.taskId)
         if (currentRequest !== requestId) return
         const workspaceId = taskData.workspace_id
-        const [statusData, priorityData, tagData, listGroups] = await Promise.all([
+        const [statusData, priorityData, tagData, listGroups, subtaskData, assigneeData, assignableUserData] = await Promise.all([
             getWorkspaceStatuses(workspaceId),
             getWorkspacePriorities(workspaceId),
             getWorkspaceTags(workspaceId),
@@ -175,6 +278,9 @@ const loadTask = async () => {
                 const spaceLists = await getSpaceTaskLists(space.id)
                 return spaceLists.map((list) => ({ ...list, space: { id: space.id, name: space.name } }))
             })),
+            getTaskSubtasks(route.params.taskId),
+            getTaskAssignees(route.params.taskId),
+            getTaskAssigneeOptions(route.params.taskId),
         ])
         if (currentRequest !== requestId) return
         task.value = taskData
@@ -182,6 +288,9 @@ const loadTask = async () => {
         priorities.value = priorityData
         tags.value = tagData
         lists.value = listGroups.flat()
+        subtasks.value = subtaskData
+        assignees.value = assigneeData
+        assignableUsers.value = assignableUserData
         if (taskData.task_list && !lists.value.some((list) => String(list.id) === String(taskData.list_id))) {
             lists.value.push({ ...taskData.task_list, space: taskData.task_list.space ?? null })
         }
@@ -210,11 +319,117 @@ const mergeTaskData = (saved) => {
 }
 
 const goBack = () => {
+    if (task.value?.parent_id) {
+        router.push({ name: 'workspace.task.show', params: { taskId: task.value.parent_id } })
+        return
+    }
     const spaceId = task.value?.task_list?.space?.id
     if (spaceId) {
         router.push({ name: 'workspace.space.show', params: { spaceId } })
     } else {
         router.push({ name: 'workspace.spaces' })
+    }
+}
+
+const openSubtask = (subtask) => {
+    router.push({ name: 'workspace.task.show', params: { taskId: subtask.id } })
+}
+
+const openSubtaskForm = (subtask = null) => {
+    subtasksCollapsed.value = false
+    editingSubtask.value = subtask
+    subtaskForm.value = { title: subtask?.title ?? '', description: subtask?.description ?? '' }
+    subtaskFormError.value = ''
+    isSubtaskFormOpen.value = true
+}
+
+const closeSubtaskForm = () => {
+    if (isSavingSubtask.value) return
+    isSubtaskFormOpen.value = false
+    editingSubtask.value = null
+}
+
+const closeSubtaskDeleteConfirmation = () => {
+    if (isDeletingSubtask.value) return
+    pendingSubtaskDeletion.value = null
+    subtaskDeleteError.value = ''
+}
+
+const saveSubtask = async () => {
+    if (!task.value) return
+    isSavingSubtask.value = true
+    subtaskFormError.value = ''
+    try {
+        const data = {
+            title: subtaskForm.value.title,
+            description: subtaskForm.value.description || null,
+        }
+        if (editingSubtask.value) {
+            const saved = await updateTaskSubtask(task.value.id, editingSubtask.value.id, data)
+            subtasks.value = subtasks.value.map((item) => String(item.id) === String(saved.id) ? { ...item, ...saved } : item)
+            successMessage.value = `${saved.title} was updated.`
+        } else {
+            const saved = await createTaskSubtask(task.value.id, { ...data, position: subtasks.value.length })
+            subtasks.value = [...subtasks.value, saved]
+            successMessage.value = `${saved.title} was created.`
+        }
+        isSubtaskFormOpen.value = false
+        editingSubtask.value = null
+    } catch (error) {
+        subtaskFormError.value = error.message ?? 'Unable to save this subtask.'
+    } finally {
+        isSavingSubtask.value = false
+    }
+}
+
+const toggleSubtaskCompletion = async (subtask) => {
+    savingSubtaskId.value = subtask.id
+    pageError.value = ''
+    try {
+        const saved = await toggleTaskCompletion(subtask.id)
+        subtasks.value = subtasks.value.map((item) => String(item.id) === String(subtask.id) ? { ...item, ...saved } : item)
+    } catch (error) {
+        pageError.value = error.message ?? 'Unable to update subtask completion.'
+    } finally {
+        savingSubtaskId.value = null
+    }
+}
+
+const deleteCurrentSubtask = async () => {
+    if (!task.value || !pendingSubtaskDeletion.value) return
+    isDeletingSubtask.value = true
+    subtaskDeleteError.value = ''
+    try {
+        const deleted = pendingSubtaskDeletion.value
+        await deleteTaskSubtask(task.value.id, deleted.id)
+        subtasks.value = subtasks.value.filter((item) => String(item.id) !== String(deleted.id))
+        pendingSubtaskDeletion.value = null
+        successMessage.value = `${deleted.title} was deleted.`
+    } catch (error) {
+        subtaskDeleteError.value = error.message ?? 'Unable to delete this subtask.'
+    } finally {
+        isDeletingSubtask.value = false
+    }
+}
+
+const toggleAssignee = async (member, shouldAssign) => {
+    if (!task.value) return
+    savingAssigneeId.value = member.id
+    pageError.value = ''
+    try {
+        if (shouldAssign) {
+            await assignTaskUsers(task.value.id, [member.id])
+            if (!assignees.value.some((item) => String(item.id) === String(member.id))) {
+                assignees.value = [...assignees.value, member]
+            }
+        } else {
+            await removeTaskAssignee(task.value.id, member.id)
+            assignees.value = assignees.value.filter((item) => String(item.id) !== String(member.id))
+        }
+    } catch (error) {
+        pageError.value = error.message ?? `Unable to ${shouldAssign ? 'assign' : 'remove'} this person.`
+    } finally {
+        savingAssigneeId.value = null
     }
 }
 

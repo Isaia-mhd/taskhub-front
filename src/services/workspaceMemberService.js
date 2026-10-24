@@ -6,9 +6,6 @@ export const getWorkspaceMembers = async (workspaceId, page = 1) => {
         const response = await apiV1Request('get', `workspace-members/${workspaceId}/members`, { params: { page } })
         const result = response.data.data
 
-        console.log(result);
-        
-
         if (Array.isArray(result)) {
             return { members: result, currentPage: page, lastPage: page, total: result.length }
         }
